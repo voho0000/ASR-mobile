@@ -48,7 +48,3 @@ OPENAI_API_KEY=your_openai_api_key
 ```
 
 Replace `your_openai_api_key` with your actual OpenAI API key.
-
----
-
-You can add more details about your app, its usage, and your development process to this README as necessary.
