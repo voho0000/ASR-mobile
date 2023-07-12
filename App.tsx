@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Button, TextInput, View, Text, Alert } from 'react-native';
+import { StyleSheet, Button, TextInput, View, Text, Alert, TouchableWithoutFeedback, Keyboard, KeyboardAvoidingView, Platform } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Audio } from 'expo-av';
 import { transcribeAudio } from './transcribeAudio';
 import { callGPTAPI } from './callGPTAPI';
+import { RecordingOptionsPresets } from 'expo-av/build/Audio';
 
 const App = () => {
   const [text, setText] = useState<string>("");
@@ -13,7 +14,6 @@ const App = () => {
   const [counter, setCounter] = useState<number>(0);
   const [gptResponse, setGptResponse] = useState<string>(""); // Stores the GPT response
   const [isLoading, setIsLoading] = useState<boolean>(false); // Handles loading state
-
 
   useEffect(() => {
     let interval: ReturnType<typeof setInterval> | null = null;
@@ -42,15 +42,24 @@ const App = () => {
       if (isPaused) {
         await recording?.startAsync();
         setIsPaused(false);
-        showToast("Recording resumed.");
+        // showToast("Recording resumed.");
       } else {
+        await Audio.setAudioModeAsync({
+          allowsRecordingIOS: true,
+          playsInSilentModeIOS: true,
+          staysActiveInBackground: true,
+          //interruptionModeIOS: Audio.INTERRUPTION_MODE_IOS_DO_NOT_MIX,
+          shouldDuckAndroid: true,
+          //interruptionModeAndroid: Audio.INTERRUPTION_MODE_ANDROID_DO_NOT_MIX,
+          playThroughEarpieceAndroid: true
+        });
         const newRecording = new Audio.Recording();
         await newRecording.prepareToRecordAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
         await newRecording.startAsync();
 
         setRecording(newRecording);
         setIsRecording(true);
-        showToast("Recording started.");
+        // showToast("Recording started.");
       }
     } catch (error) {
       console.error('Failed to start recording:', error);
@@ -62,10 +71,10 @@ const App = () => {
     try {
       await recording?.pauseAsync();
       setIsPaused(true);
-      showToast("Recording paused.");
+      // showToast("Recording paused.");
     } catch (error) {
       console.error('Failed to pause recording:', error);
-      showToast("Failed to pause recording. Please try again.");
+      // showToast("Failed to pause recording. Please try again.");
     }
   };
 
@@ -77,8 +86,7 @@ const App = () => {
       setIsRecording(false);
       setIsPaused(false);
       setCounter(0);
-      showToast("Recording stopped.");
-
+      // showToast("Recording stopped.");
       if (audioUri) {
         try {
           const transcript = await transcribeAudio(audioUri);
@@ -94,11 +102,11 @@ const App = () => {
     }
   };
 
+
   const sendToGPT = async () => {
     setIsLoading(true);
     try {
       // Call your GPT API here with the `text` as the input.
-      // Assuming you have a function named callGPTAPI that does this:
       const response = await callGPTAPI(text);
       setGptResponse(response);
     } catch (error) {
@@ -110,29 +118,37 @@ const App = () => {
 
 
   return (
-    <View style={styles.container}>
-      <Text>Recording Time: {counter} seconds</Text>
-      <Button title={isRecording ? (isPaused ? "Resume Recording" : "Pause Recording") : "Start Recording"} onPress={isRecording ? (isPaused ? startRecording : pauseRecording) : startRecording} />
-      <Button title="Stop Recording" onPress={stopRecording} disabled={!isRecording} />
-      <TextInput
-        multiline
-        style={styles.textInput}
-        onChangeText={setText}
-        value={text}
-      />
-      <Button title="Send to GPT" onPress={sendToGPT} disabled={isLoading} />
-      <TextInput
-        multiline
-        style={styles.textInput}
-        value={gptResponse}
-        onChangeText={setGptResponse}
-      />
-      <StatusBar style="auto" />
-    </View>
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.keyboardContainer}>
+        <View style={styles.container}>
+          <Text>Recording Time: {counter} seconds</Text>
+          <Button title={isRecording ? (isPaused ? "Resume Recording" : "Pause Recording") : "Start Recording"} onPress={isRecording ? (isPaused ? startRecording : pauseRecording) : startRecording} />
+          <Button title="Stop Recording" onPress={stopRecording} disabled={!isRecording} />
+          {/* <Button title={isPlaying ? "Stop Playback" : "Play Recording"} onPress={playRecording} /> */}
+          <TextInput
+            multiline
+            style={styles.textInput}
+            onChangeText={setText}
+            value={text}
+          />
+          <Button title="Send to GPT" onPress={sendToGPT} disabled={isLoading} />
+          <TextInput
+            multiline
+            style={styles.textInput}
+            value={gptResponse}
+            onChangeText={setGptResponse}
+          />
+          <StatusBar style="auto" />
+        </View>
+      </KeyboardAvoidingView>
+    </TouchableWithoutFeedback>
   );
 };
 
 const styles = StyleSheet.create({
+  keyboardContainer: {
+    flex: 1,
+  },
   container: {
     flex: 1,
     backgroundColor: '#fff',
