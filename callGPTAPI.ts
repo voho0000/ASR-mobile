@@ -11,7 +11,7 @@ export const callGPTAPI = async (inputText: string) => {
     "model": "gpt-4",
     "messages": [
       { "role": "system", "content": "You are a helpful assistant." },
-      { "role": "user", "content": prompt + inputText + "\"\n}" }
+      { "role": "user", "content": prompt + inputText}
     ],
     "temperature": 0.5
   };
