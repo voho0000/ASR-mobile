@@ -1,112 +1,28 @@
-import React, { useState, useEffect } from 'react';
-import { StyleSheet, Button, TextInput, View, Text, Alert, TouchableWithoutFeedback, Keyboard, KeyboardAvoidingView, Platform } from 'react-native';
+import { useState, } from 'react';
+import { StyleSheet, TextInput, View, Text, Alert, TouchableWithoutFeedback, Keyboard, KeyboardAvoidingView, Platform, Button, TouchableOpacity } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { Audio } from 'expo-av';
-import { transcribeAudio } from './transcribeAudio';
 import { callGPTAPI } from './callGPTAPI';
-import { RecordingOptionsPresets } from 'expo-av/build/Audio';
+import IconButton from './IconButton';
+import { useRecording } from './useRecording';
 
 const App = () => {
   const [text, setText] = useState<string>("");
-  const [recording, setRecording] = useState<Audio.Recording | null>(null);
-  const [isRecording, setIsRecording] = useState<boolean>(false);
-  const [isPaused, setIsPaused] = useState<boolean>(false);
-  const [counter, setCounter] = useState<number>(0);
   const [gptResponse, setGptResponse] = useState<string>(""); // Stores the GPT response
   const [isLoading, setIsLoading] = useState<boolean>(false); // Handles loading state
 
-  useEffect(() => {
-    let interval: ReturnType<typeof setInterval> | null = null;
-    if (isRecording && !isPaused) {
-      interval = setInterval(() => {
-        setCounter(prevCounter => prevCounter + 1);
-      }, 1000);
-    } else {
-      clearInterval(interval!);
-    }
-    return () => clearInterval(interval!);
-  }, [isRecording, isPaused]);
-
-  const showToast = (message: string) => {
-    Alert.alert("Notification", message);
-  };
-
-  const startRecording = async () => {
-    try {
-      const { status } = await Audio.requestPermissionsAsync();
-      if (status !== 'granted') {
-        showToast("Permission to access audio recording was denied.");
-        return;
-      }
-
-      if (isPaused) {
-        await recording?.startAsync();
-        setIsPaused(false);
-        // showToast("Recording resumed.");
-      } else {
-        await Audio.setAudioModeAsync({
-          allowsRecordingIOS: true,
-          playsInSilentModeIOS: true,
-          staysActiveInBackground: true,
-          //interruptionModeIOS: Audio.INTERRUPTION_MODE_IOS_DO_NOT_MIX,
-          shouldDuckAndroid: true,
-          //interruptionModeAndroid: Audio.INTERRUPTION_MODE_ANDROID_DO_NOT_MIX,
-          playThroughEarpieceAndroid: true
-        });
-        const newRecording = new Audio.Recording();
-        await newRecording.prepareToRecordAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
-        await newRecording.startAsync();
-
-        setRecording(newRecording);
-        setIsRecording(true);
-        // showToast("Recording started.");
-      }
-    } catch (error) {
-      console.error('Failed to start recording:', error);
-      showToast("Failed to start recording. Please try again.");
-    }
-  };
-
-  const pauseRecording = async () => {
-    try {
-      await recording?.pauseAsync();
-      setIsPaused(true);
-      // showToast("Recording paused.");
-    } catch (error) {
-      console.error('Failed to pause recording:', error);
-      // showToast("Failed to pause recording. Please try again.");
-    }
-  };
-
-  const stopRecording = async () => {
-    try {
-      await recording?.stopAndUnloadAsync();
-      const audioUri = recording?.getURI() || null;
-      setRecording(null);
-      setIsRecording(false);
-      setIsPaused(false);
-      setCounter(0);
-      // showToast("Recording stopped.");
-      if (audioUri) {
-        try {
-          const transcript = await transcribeAudio(audioUri);
-          setText(transcript);
-        } catch (error) {
-          console.error('Failed to pause recording:', error);
-          showToast("Failed to transcribe. Please try again.");
-        }
-      }
-    } catch (error) {
-      console.error('Failed to stop recording:', error);
-      showToast("Failed to stop recording. Please try again.");
-    }
-  };
-
+  const {
+    recording,
+    isRecording,
+    isPaused,
+    counter,
+    startRecording,
+    stopRecording,
+    pauseRecording,
+  } = useRecording(setText);
 
   const sendToGPT = async () => {
     setIsLoading(true);
     try {
-      // Call your GPT API here with the `text` as the input.
       const response = await callGPTAPI(text);
       setGptResponse(response);
     } catch (error) {
@@ -116,22 +32,50 @@ const App = () => {
     setIsLoading(false);
   };
 
-
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.keyboardContainer}>
         <View style={styles.container}>
           <Text>Recording Time: {counter} seconds</Text>
-          <Button title={isRecording ? (isPaused ? "Resume Recording" : "Pause Recording") : "Start Recording"} onPress={isRecording ? (isPaused ? startRecording : pauseRecording) : startRecording} />
-          <Button title="Stop Recording" onPress={stopRecording} disabled={!isRecording} />
-          {/* <Button title={isPlaying ? "Stop Playback" : "Play Recording"} onPress={playRecording} /> */}
+          <View style={styles.buttonsContainer}>
+            {isRecording ? (
+              <>
+                <IconButton
+                  onPress={isPaused ? startRecording : pauseRecording}
+                  iconName={isPaused ? "play" : "pause"}
+                  buttonStyle={styles.recordButton}
+                  iconStyle={styles.icon}
+                />
+                <IconButton
+                  onPress={stopRecording}
+                  iconName="stop"
+                  buttonStyle={styles.recordButton}
+                  iconStyle={styles.icon}
+                />
+              </>
+            ) : (
+              <IconButton
+                onPress={startRecording}
+                iconName="microphone"
+                buttonStyle={styles.recordButton}
+                iconStyle={styles.icon}
+              />
+            )}
+          </View>
           <TextInput
             multiline
             style={styles.textInput}
             onChangeText={setText}
             value={text}
           />
-          <Button title="Send to GPT" onPress={sendToGPT} disabled={isLoading} />
+          {/* <Button title="Send to GPT" onPress={sendToGPT} disabled={isLoading} /> */}
+          <TouchableOpacity
+            onPress={sendToGPT}
+            style={[styles.button, isLoading ? styles.disabledButton : null]}
+            disabled={isLoading}
+          >
+            <Text style={styles.buttonText}>Send to GPT</Text>
+          </TouchableOpacity>
           <TextInput
             multiline
             style={styles.textInput}
@@ -154,6 +98,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
+    margin: 10,
   },
   textInput: {
     height: 200,
@@ -163,6 +108,38 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     width: '80%',
     padding: 5
+  },
+  buttonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  button: {
+    backgroundColor: '#007BFF',
+    padding: 10,
+    borderRadius: 5,
+    alignItems: 'center',
+    margin: 10,
+    justifyContent: 'center',
+  },
+  disabledButton: {
+    backgroundColor: 'gray', // or another color of your choice
+  },
+  buttonText: {
+    color: 'white',
+    fontSize: 12,
+  },
+  recordButton: {
+    backgroundColor: 'red',
+    borderRadius: 30,
+    width: 50,
+    height: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+    margin: 10,
+  },
+  icon: {
+    color: 'white',
   },
 });
 
