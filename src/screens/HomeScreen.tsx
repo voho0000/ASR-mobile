@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, FlatList, TouchableOpacity, Text, Button, StyleSheet, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useNavigation, useIsFocused} from '@react-navigation/native';
+import { useNavigation, useIsFocused } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
 
@@ -31,7 +31,7 @@ const HomeScreen = () => {
     }, [isFocused]);
 
     const handleAddItem = () => {
-        Alert.prompt('Enter item name', '', (text) => {
+        Alert.prompt('Enter patient id', '', (text) => {
             const newItems = [...items, text];
             setItems(newItems);
             AsyncStorage.setItem('items', JSON.stringify(newItems));
@@ -65,9 +65,33 @@ const HomeScreen = () => {
         );
     };
 
+    const handleLogout = async () => {
+        Alert.alert(
+            'Log Out', // Title of the dialog
+            'Are you sure you want to log out?', // Message of the dialog
+            [
+                {
+                    text: 'No', // Text of the first button
+                    onPress: () => console.log('Cancel Pressed'), // Function to execute when the first button is pressed
+                    style: 'cancel',
+                },
+                {
+                    text: 'Yes', // Text of the second button
+                    onPress: async () => { // Function to execute when the second button is pressed
+                        await AsyncStorage.removeItem('userToken');
+                        navigation.replace('LoginScreen');
+                    }
+                },
+            ],
+            { cancelable: false }
+        );
+    };
+
     return (
         <View style={styles.container}>
-            <Button title="Add Item" onPress={handleAddItem} />
+            <TouchableOpacity style={styles.button} onPress={handleAddItem}>
+                <Text style={styles.buttonText}>Add Patient Record</Text>
+            </TouchableOpacity>            
             <FlatList
                 data={items}
                 keyExtractor={(item, index) => index.toString()}
@@ -78,6 +102,9 @@ const HomeScreen = () => {
                     </TouchableOpacity>
                 )}
             />
+            <TouchableOpacity style={styles.button} onPress={handleLogout}>
+                <Text style={styles.buttonText}>Log Out</Text>
+            </TouchableOpacity>
         </View>
     );
 };
@@ -99,6 +126,18 @@ const styles = StyleSheet.create({
     text: {
         fontSize: 18,
     },
+    button: {
+        backgroundColor: '#007BFF',
+        padding: 10,
+        borderRadius: 5,
+        alignItems: 'center',
+        margin: 10,
+        justifyContent: 'center',
+      },
+      buttonText: {
+        color: 'white',
+        fontSize: 12,
+      },
 });
 
 export default HomeScreen;
