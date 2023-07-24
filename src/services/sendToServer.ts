@@ -19,7 +19,7 @@ const sendToServer = async (gptResponse: string) => {
 
         Toast.show({
             type: 'success',
-            position: 'bottom',
+            position: 'top',
             text1: 'Success',
             text2: 'Successfully sent data to server',
             visibilityTime: 2000,
@@ -31,7 +31,7 @@ const sendToServer = async (gptResponse: string) => {
     } catch (error) {
         Toast.show({
             type: 'error',
-            position: 'bottom',
+            position: 'top',
             text1: 'Error',
             text2: 'Failed to send data to server',
             visibilityTime: 2000,

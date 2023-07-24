@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Audio } from 'expo-av';
 import { Alert } from 'react-native';
 import { transcribeAudio } from './transcribeAudio';
+import Toast from 'react-native-toast-message';
 
 export const useRecording = (setText: React.Dispatch<React.SetStateAction<string>>) => {
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
@@ -22,10 +23,6 @@ export const useRecording = (setText: React.Dispatch<React.SetStateAction<string
     }
     return () => clearInterval(interval!);
   }, [isRecording, isPaused]);
-
-  const showToast = (message: string) => {
-    Alert.alert("Notification", message);
-  };
 
   const startRecording = async () => {
     try {
@@ -54,8 +51,15 @@ export const useRecording = (setText: React.Dispatch<React.SetStateAction<string
       }
     } catch (error) {
       console.error('Failed to start recording:', error);
-      showToast("Failed to start recording. Please try again.");
-    }
+      Toast.show({
+        type: 'error',
+        position: 'top',
+        text1: 'Error',
+        text2: 'Failed to start recording. Please try again.',
+        visibilityTime: 2000,
+        autoHide: true,
+        bottomOffset: 40,
+      });    }
   };
 
   const pauseRecording = async () => {
@@ -64,8 +68,15 @@ export const useRecording = (setText: React.Dispatch<React.SetStateAction<string
       setIsPaused(true);
     } catch (error) {
       console.error('Failed to pause recording:', error);
-      showToast("Failed to pause recording. Please try again.");
-    }
+      Toast.show({
+        type: 'error',
+        position: 'top',
+        text1: 'Error',
+        text2: 'Failed to pause recording. Please try again.',
+        visibilityTime: 2000,
+        autoHide: true,
+        bottomOffset: 40,
+      });    }
   };
 
   const stopRecording = async () => {
@@ -80,15 +91,38 @@ export const useRecording = (setText: React.Dispatch<React.SetStateAction<string
         try {
           const transcript = await transcribeAudio(audioUri);
           setText(transcript);
+          Toast.show({
+            type: 'success',
+            position: 'top',
+            text1: 'Success',
+            text2: 'Successfully transcribed audio',
+            visibilityTime: 2000,
+            autoHide: true,
+            bottomOffset: 40,
+          });
         } catch (error) {
           console.error('Failed to pause recording:', error);
-          showToast("Failed to transcribe. Please try again.");
-        }
+          Toast.show({
+            type: 'error',
+            position: 'top',
+            text1: 'Error',
+            text2: 'Failed to transcribe audio. Please try again.',
+            visibilityTime: 2000,
+            autoHide: true,
+            bottomOffset: 40,
+          });        }
       }
     } catch (error) {
       console.error('Failed to stop recording:', error);
-      showToast("Failed to stop recording. Please try again.");
-    }
+      Toast.show({
+        type: 'error',
+        position: 'top',
+        text1: 'Error',
+        text2: 'Failed to stop recording. Please try again.',
+        visibilityTime: 2000,
+        autoHide: true,
+        bottomOffset: 40,
+      });    }
   };
 
   return {
