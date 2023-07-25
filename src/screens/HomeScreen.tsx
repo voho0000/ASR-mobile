@@ -5,7 +5,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
-import { fetchPatientRecords, addPatientRecord, deletePatientRecord } from '../services/FirebaseService';
+import { fetchPatientRecords, addPatientRecord, deletePatientRecord } from '../services/FirestoreService';
 import { logout } from '../services/auth';
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<
