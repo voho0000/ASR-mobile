@@ -1,12 +1,12 @@
 // HomeScreen.tsx
 import React, { useEffect, useState } from 'react';
 import { View, FlatList, TouchableOpacity, Text, Button, StyleSheet, Alert, Platform } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { fetchPatientRecords, addPatientRecord, deletePatientRecord } from '../services/FirestoreService';
 import { logout } from '../services/auth';
+import CustomButtom from '../components/CustomButtom';
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<
     RootStackParamList,
@@ -21,7 +21,6 @@ const HomeScreen = () => {
     useEffect(() => {
         if (isFocused) {
             fetchPatientRecords().then(response => {
-                // You may want to check if the response is not null or undefined before setting it
                 if (response) {
                     setItems(response); // Assuming response is an array of items
                 }
@@ -61,7 +60,7 @@ const HomeScreen = () => {
                 [
                     {
                         text: 'No', // Text of the first button
-                        onPress: () => {}, // Function to execute when the first button is pressed
+                        onPress: () => { }, // Function to execute when the first button is pressed
                         style: 'cancel',
                     },
                     {
@@ -96,7 +95,7 @@ const HomeScreen = () => {
                 [
                     {
                         text: 'No', // Text of the first button
-                        onPress: () => {}, // Function to execute when the first button is pressed
+                        onPress: () => { }, // Function to execute when the first button is pressed
                         style: 'cancel',
                     },
                     {
@@ -113,9 +112,7 @@ const HomeScreen = () => {
 
     return (
         <View style={styles.container}>
-            <TouchableOpacity style={styles.button} onPress={handleAddItem}>
-                <Text style={styles.buttonText}>Add Patient Record</Text>
-            </TouchableOpacity>
+            <CustomButtom title="Add a Patient" onPress={handleAddItem} />
             <FlatList
                 data={items}
                 keyExtractor={(item, index) => index.toString()}
@@ -126,9 +123,7 @@ const HomeScreen = () => {
                     </TouchableOpacity>
                 )}
             />
-            <TouchableOpacity style={styles.button} onPress={handleLogout}>
-                <Text style={styles.buttonText}>Log Out</Text>
-            </TouchableOpacity>
+            <CustomButtom title="Log Outt" onPress={handleLogout} />
         </View>
     );
 };
@@ -149,18 +144,6 @@ const styles = StyleSheet.create({
     },
     text: {
         fontSize: 18,
-    },
-    button: {
-        backgroundColor: '#007BFF',
-        padding: 10,
-        borderRadius: 5,
-        alignItems: 'center',
-        margin: 10,
-        justifyContent: 'center',
-    },
-    buttonText: {
-        color: 'white',
-        fontSize: 12,
     },
 });
 

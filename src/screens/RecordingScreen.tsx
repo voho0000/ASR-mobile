@@ -1,15 +1,15 @@
 import { useState, useEffect } from 'react';
-import { StyleSheet, TextInput, View, ScrollView, Text, Alert, TouchableWithoutFeedback, Keyboard, KeyboardAvoidingView, Platform, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { StyleSheet, TextInput, View, ScrollView, Text, Alert, TouchableWithoutFeedback, Keyboard, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { callGPTAPI } from '../services/callGPTAPI';
 import IconButton from '../components/IconButton';
 import { useRecording } from '../services/useRecording';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view'
 import sendToServer from '../services/sendToServer';
 import { uploadDataToFirestore, fetchSinglePatientRecord } from '../services/FirestoreService';
+import CustomButtom from '../components/CustomButtom';
 
 
 type RecordingScreenRouteProp = RouteProp<RootStackParamList, 'RecordingScreen'>;
@@ -96,22 +96,16 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
                                 <IconButton
                                     onPress={isPaused ? startRecording : pauseRecording}
                                     iconName={isPaused ? "play" : "pause"}
-                                    buttonStyle={styles.recordButton}
-                                    iconStyle={styles.icon}
                                 />
                                 <IconButton
                                     onPress={stopRecording}
                                     iconName="stop"
-                                    buttonStyle={styles.recordButton}
-                                    iconStyle={styles.icon}
                                 />
                             </>
                         ) : (
                             <IconButton
                                 onPress={startRecording}
                                 iconName="microphone"
-                                buttonStyle={styles.recordButton}
-                                iconStyle={styles.icon}
                             />
                         )}
                         <Text>Record Time: {counter} s</Text>
@@ -139,12 +133,7 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
                         onChangeText={setGptResponse}
                         placeholder = "GPT response"
                     />
-                    <TouchableOpacity
-                        onPress={() => sendToServer(gptResponse)}
-                        style={styles.button}
-                    >
-                        <Text style={styles.buttonText}>Send to Server</Text>
-                    </TouchableOpacity>
+                    {/* <CustomButtom title="Send to server" onPress={() => sendToServer(gptResponse)} /> */} 
                     <StatusBar style="auto" />
                 </ScrollView>
             </KeyboardAwareScrollView>
@@ -188,18 +177,7 @@ const styles = StyleSheet.create({
         color: 'white',
         fontSize: 12,
     },
-    recordButton: {
-        backgroundColor: 'red',
-        borderRadius: 30,
-        width: 50,
-        height: 50,
-        justifyContent: 'center',
-        alignItems: 'center',
-        margin: 10,
-    },
-    icon: {
-        color: 'white',
-    },
+
 });
 
 export default RecordingScreen;

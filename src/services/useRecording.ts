@@ -1,5 +1,4 @@
 // useRecording.ts
-
 import { useState, useEffect } from "react";
 import { Audio } from 'expo-av';
 import { transcribeAudio } from './transcribeAudio';
