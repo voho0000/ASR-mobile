@@ -9,6 +9,7 @@ import { RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view'
 import sendToServer from '../services/sendToServer';
+import { uploadDataToFirestore, fetchSinglePatientRecord } from '../services/FirebaseService';
 
 
 type RecordingScreenRouteProp = RouteProp<RootStackParamList, 'RecordingScreen'>;
@@ -19,7 +20,7 @@ type Props = {
 
 const RecordingScreen: React.FC<Props> = ({ route }) => {
     const [patientInfo, setPatientInfo] = useState<string>("");
-    const [text, setText] = useState<string>("");
+    const [asrResponse, setAsrResponse] = useState<string>("");
     const [gptResponse, setGptResponse] = useState<string>(""); // Stores the GPT response
     const [isLoading, setIsLoading] = useState<boolean>(false); // Handles loading state
     const [isLoadingData, setIsLoadingData] = useState(true); // Add a new loading state
@@ -33,15 +34,15 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
         startRecording,
         stopRecording,
         pauseRecording,
-    } = useRecording(setText);
+    } = useRecording(setAsrResponse);
 
     // Inside your RecordingScreen component, get the item name from route params like so
-    const itemName = route.params.name;
+    const  patientId = route.params.name;
 
     const sendToGPT = async () => {
         setIsLoading(true);
         try {
-            const response = await callGPTAPI(text);
+            const response = await callGPTAPI(asrResponse);
             setGptResponse(response);
         } catch (error) {
             console.error("Failed to get response from GPT:", error);
@@ -54,38 +55,28 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
         const fetchData = async () => {
             try {
                 setIsLoadingData(true); // Start loading
-                const storedText = await AsyncStorage.getItem(`text_${itemName}`);
-                const storedGptResponse = await AsyncStorage.getItem(`gptResponse_${itemName}`);
-
-                if (storedText !== null) {
-                    setText(storedText);
-                }
-
-                if (storedGptResponse !== null) {
-                    setGptResponse(storedGptResponse);
+                const patientRecord = await fetchSinglePatientRecord(patientId);
+                if (patientRecord) {
+                    setAsrResponse(patientRecord.fields.asrResponse.stringValue);
+                    setGptResponse(patientRecord.fields.gptResponse.stringValue);
+                    setPatientInfo(patientRecord.fields.patientInfo.stringValue);
                 }
             } catch (error) {
-                console.error("Failed to fetch data from AsyncStorage:", error);
+                console.error("Failed to fetch data from Firestore:", error);
             } finally {
                 setIsLoadingData(false); // Finish loading
             }
         };
 
         fetchData();
-    }, [itemName]);
-
-
-    useEffect(() => {
-        if (!isLoadingData) { // Only save to AsyncStorage if not loading data
-            AsyncStorage.setItem(`text_${itemName}`, text);
-        }
-    }, [text, itemName, isLoadingData]); // Add isLoadingData to dependencies
+    }, [ patientId]);
 
     useEffect(() => {
         if (!isLoadingData) { // Only save to AsyncStorage if not loading data
-            AsyncStorage.setItem(`gptResponse_${itemName}`, gptResponse);
+            AsyncStorage.setItem(`gptResponse_${ patientId}`, gptResponse);
+            uploadDataToFirestore( patientId, patientInfo, asrResponse, gptResponse)
         }
-    }, [gptResponse, itemName, isLoadingData]); // Add isLoadingData to dependencies
+    }, [patientInfo, asrResponse, gptResponse,  patientId, isLoadingData]); // Add isLoadingData to dependencies
 
 
     return (
@@ -128,8 +119,8 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
                     <TextInput
                         multiline
                         style={styles.textInput}
-                        onChangeText={setText}
-                        value={text}
+                        onChangeText={setAsrResponse}
+                        value={asrResponse}
                         placeholder = "Start recording to get ASR result"
                     />
                     {/* <Button title="Send to GPT" onPress={sendToGPT} disabled={isLoading} /> */}
