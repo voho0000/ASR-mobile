@@ -1,10 +1,11 @@
 // HomeScreen.tsx
 import React, { useEffect, useState } from 'react';
-import { View, FlatList, TouchableOpacity, Text, Button, StyleSheet, Alert } from 'react-native';
+import { View, FlatList, TouchableOpacity, Text, Button, StyleSheet, Alert, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
+import { fetchPatientRecords, addPatientRecord, deletePatientRecord } from '../services/FirebaseService';
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<
     RootStackParamList,
@@ -18,15 +19,14 @@ const HomeScreen = () => {
 
     useEffect(() => {
         if (isFocused) {
-            AsyncStorage.getItem('items')
-                .then((items) => {
-                    if (items !== null) {
-                        setItems(JSON.parse(items));
-                    } else {
-                        // handle null case
-                        setItems([]);
-                    }
-                });
+            fetchPatientRecords().then(response => {
+                // You may want to check if the response is not null or undefined before setting it
+                if (response) {
+                    setItems(response); // Assuming response is an array of items
+                }
+            }).catch(error => {
+                console.log('Error fetching patient records:', error);
+            });
         }
     }, [isFocused]);
 
@@ -34,7 +34,7 @@ const HomeScreen = () => {
         Alert.prompt('Enter patient id', '', (text) => {
             const newItems = [...items, text];
             setItems(newItems);
-            AsyncStorage.setItem('items', JSON.stringify(newItems));
+            addPatientRecord(text);
         });
     };
 
@@ -42,56 +42,81 @@ const HomeScreen = () => {
         navigation.navigate('RecordingScreen', { name: item });
     };
 
-    const deleteItem = (index: number) => {
-        Alert.alert(
-            'Delete item', // Title of the dialog
-            'Are you sure you want to delete this item?', // Message of the dialog
-            [
-                {
-                    text: 'No', // Text of the first button
-                    onPress: () => console.log('Cancel Pressed'), // Function to execute when the first button is pressed
-                    style: 'cancel',
-                },
-                {
-                    text: 'Yes', // Text of the second button
-                    onPress: () => { // Function to execute when the second button is pressed
-                        const newItems = items.filter((_, itemIndex) => itemIndex !== index);
-                        setItems(newItems);
-                        AsyncStorage.setItem('items', JSON.stringify(newItems));
-                    }
-                },
-            ],
-            { cancelable: false }
-        );
+    const deleteItem = async (index: number) => {
+        if (Platform.OS === 'web') {
+            const patientId = items[index];
+            try {
+                // Delete the record from Firestore
+                await deletePatientRecord(patientId);
+                const newItems = items.filter((_, itemIndex) => itemIndex !== index);
+                setItems(newItems);
+            } catch (error) {
+                console.error("Failed to delete item:", error);
+            }
+        } else {
+            Alert.alert(
+                'Delete item', // Title of the dialog
+                'Are you sure you want to delete this item?', // Message of the dialog
+                [
+                    {
+                        text: 'No', // Text of the first button
+                        onPress: () => {}, // Function to execute when the first button is pressed
+                        style: 'cancel',
+                    },
+                    {
+                        text: 'Yes', // Text of the second button
+                        onPress: async () => { // Function to execute when the second button is pressed
+                            const patientId = items[index];
+                            try {
+                                // Delete the record from Firestore
+                                await deletePatientRecord(patientId);
+                                const newItems = items.filter((_, itemIndex) => itemIndex !== index);
+                                setItems(newItems);
+                            } catch (error) {
+                                console.error("Failed to delete item:", error);
+                            }
+                        }
+                    },
+                ],
+                { cancelable: false }
+            );
+        }
+
     };
 
+
     const handleLogout = async () => {
-        Alert.alert(
-            'Log Out', // Title of the dialog
-            'Are you sure you want to log out?', // Message of the dialog
-            [
-                {
-                    text: 'No', // Text of the first button
-                    onPress: () => console.log('Cancel Pressed'), // Function to execute when the first button is pressed
-                    style: 'cancel',
-                },
-                {
-                    text: 'Yes', // Text of the second button
-                    onPress: async () => { // Function to execute when the second button is pressed
-                        await AsyncStorage.removeItem('userToken');
-                        navigation.replace('LoginScreen');
-                    }
-                },
-            ],
-            { cancelable: false }
-        );
+        if (Platform.OS === 'web') {
+            await AsyncStorage.removeItem('userToken');
+            navigation.replace('LoginScreen');
+        } else {
+            Alert.alert(
+                'Log Out', // Title of the dialog
+                'Are you sure you want to log out?', // Message of the dialog
+                [
+                    {
+                        text: 'No', // Text of the first button
+                        onPress: () => {}, // Function to execute when the first button is pressed
+                        style: 'cancel',
+                    },
+                    {
+                        text: 'Yes', // Text of the second button
+                        onPress: async () => { // Function to execute when the second button is pressed
+                            await AsyncStorage.removeItem('userToken');
+                            navigation.replace('LoginScreen');
+                        }
+                    },
+                ],
+                { cancelable: false }
+            );
+        }
     };
 
     return (
         <View style={styles.container}>
             <TouchableOpacity style={styles.button} onPress={handleAddItem}>
                 <Text style={styles.buttonText}>Add Patient Record</Text>
-            </TouchableOpacity>            
+            </TouchableOpacity>
             <FlatList
                 data={items}
                 keyExtractor={(item, index) => index.toString()}
@@ -133,11 +158,11 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         margin: 10,
         justifyContent: 'center',
-      },
-      buttonText: {
+    },
+    buttonText: {
         color: 'white',
         fontSize: 12,
-      },
+    },
 });
 
 export default HomeScreen;
