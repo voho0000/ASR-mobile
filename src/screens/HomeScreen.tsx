@@ -6,6 +6,7 @@ import { useNavigation, useIsFocused } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { fetchPatientRecords, addPatientRecord, deletePatientRecord } from '../services/FirebaseService';
+import { logout } from '../services/auth';
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<
     RootStackParamList,
@@ -87,8 +88,7 @@ const HomeScreen = () => {
 
     const handleLogout = async () => {
         if (Platform.OS === 'web') {
-            await AsyncStorage.removeItem('userToken');
-            navigation.replace('LoginScreen');
+            logout().then(() => navigation.replace('LoginScreen'));
         } else {
             Alert.alert(
                 'Log Out', // Title of the dialog
@@ -102,8 +102,7 @@ const HomeScreen = () => {
                     {
                         text: 'Yes', // Text of the second button
                         onPress: async () => { // Function to execute when the second button is pressed
-                            await AsyncStorage.removeItem('userToken');
-                            navigation.replace('LoginScreen');
+                            logout().then(() => navigation.replace('LoginScreen'));
                         }
                     },
                 ],
