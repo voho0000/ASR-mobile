@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { Audio } from 'expo-av';
-import { Alert } from 'react-native';
 import { transcribeAudio } from './transcribeAudio';
 import Toast from 'react-native-toast-message';
 

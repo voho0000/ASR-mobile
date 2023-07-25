@@ -9,7 +9,7 @@ import { RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view'
 import sendToServer from '../services/sendToServer';
-import { uploadDataToFirestore, fetchSinglePatientRecord } from '../services/FirebaseService';
+import { uploadDataToFirestore, fetchSinglePatientRecord } from '../services/FirestoreService';
 
 
 type RecordingScreenRouteProp = RouteProp<RootStackParamList, 'RecordingScreen'>;
