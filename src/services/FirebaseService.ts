@@ -40,14 +40,14 @@ export const addPatientRecord = async (patientId: string): Promise<void> => {
         },
         body: JSON.stringify({
             fields: {
-                "ASR_response": {
-                    "stringValue": "2"
+                "asrResponse": {
+                    "stringValue": ""
                 },
-                "GPT_response": {
-                    "stringValue": "3"
+                "gptResponse": {
+                    "stringValue": ""
                 },
-                "patient_info": {
-                    "stringValue": "1"
+                "patientInfo": {
+                    "stringValue": ""
                 }
             }
         }),
@@ -114,6 +114,7 @@ export const uploadDataToFirestore = async (
     const apiUrl = `https://firestore.googleapis.com/v1/projects/gpt-medical-note/databases/(default)/documents/PatientRecords/${userId}/PatientRecord/${patientId}`;
   
     const response = await fetch(apiUrl, {
+      method: 'GET',
       headers: {
         Authorization: `Bearer ${token}`,
       },

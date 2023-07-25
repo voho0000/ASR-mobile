@@ -56,6 +56,7 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
             try {
                 setIsLoadingData(true); // Start loading
                 const patientRecord = await fetchSinglePatientRecord(patientId);
+
                 if (patientRecord) {
                     setAsrResponse(patientRecord.fields.asrResponse.stringValue);
                     setGptResponse(patientRecord.fields.gptResponse.stringValue);
@@ -71,12 +72,13 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
         fetchData();
     }, [ patientId]);
 
+    console.log('Data in RecordingScreen:',  patientInfo);
+
     useEffect(() => {
         if (!isLoadingData) { // Only save to AsyncStorage if not loading data
-            AsyncStorage.setItem(`gptResponse_${ patientId}`, gptResponse);
             uploadDataToFirestore( patientId, patientInfo, asrResponse, gptResponse)
         }
-    }, [patientInfo, asrResponse, gptResponse,  patientId, isLoadingData]); // Add isLoadingData to dependencies
+    }, [patientInfo, asrResponse, gptResponse, patientId]); // Add isLoadingData to dependencies
 
 
     return (
