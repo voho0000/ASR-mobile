@@ -1,155 +1,83 @@
 // FirebaseService.ts
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { db } from '../../firebaseConfig';
+import { collection, getDocs, doc, setDoc, updateDoc, deleteDoc, getDoc } from 'firebase/firestore';
+import { auth } from '../../firebaseConfig';
 
 export const fetchPatientRecords = async (): Promise<string[]> => {
-    const token = await AsyncStorage.getItem('userToken');
-    const userId = await AsyncStorage.getItem('userID');
-    if (token === null) {
-        throw new Error('User token not found');
-    }
-    else {
-        const url = `https://firestore.googleapis.com/v1/projects/gpt-medical-note/databases/(default)/documents/PatientRecords/${userId}/PatientRecord`;
-        const response = await fetch(url, {
-            headers: { 
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}` },
-        });
 
-        if (!response.ok) {
-            throw new Error(`Failed to fetch patient records: ${response.status}`);
-        }
+  const userId =auth.currentUser?.uid
 
-        const data = await response.json();
-        return data.documents.map((doc: any) => doc.name.split('/').pop());
-    }
+  if (!userId) {
+    throw new Error('User not authenticated, please log in again');
+  }
+  else {
+    const patientRecordsRef = collection(db, 'PatientRecords', userId, 'PatientRecord');
+    const patientRecordsSnap = await getDocs(patientRecordsRef);
+
+    return patientRecordsSnap.docs.map(doc => doc.id);
+  }
 };
 
 export const addPatientRecord = async (patientId: string): Promise<void> => {
-    const token = await AsyncStorage.getItem('userToken');
-    const userId = await AsyncStorage.getItem('userID');
-    if (token === null) {
-        throw new Error('User token not found');
-    }
+  const userId =auth.currentUser?.uid
 
-    const url = `https://firestore.googleapis.com/v1/projects/gpt-medical-note/databases/(default)/documents/PatientRecords/${userId}/PatientRecord?documentId=${patientId}`;
-    const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            fields: {
-                "asrResponse": {
-                    "stringValue": ""
-                },
-                "gptResponse": {
-                    "stringValue": ""
-                },
-                "patientInfo": {
-                    "stringValue": ""
-                }
-            }
-        }),
-    });
-    if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(`Failed to add patient record: ${errorData.error.message}`);
-    }
+  if (!userId) {
+    throw new Error('User not authenticated, please log in again');
+  }
+
+  await setDoc(doc(db, 'PatientRecords', userId, 'PatientRecord', patientId), {
+    asrResponse: "",
+    gptResponse: "",
+    patientInfo: ""
+  });
 };
 
 
 export const uploadDataToFirestore = async (
-    patientId: string,
-    patientInfo: string,
-    asrResponse: string,
-    gptResponse: string
-  ) => {
-    const userId = await AsyncStorage.getItem("userID");
-    const token = await AsyncStorage.getItem("userToken");
-  
-    if (!userId || !token) {
-      throw new Error("User is not logged in ");
-    }
-  
-    const apiUrl = `https://firestore.googleapis.com/v1/projects/gpt-medical-note/databases/(default)/documents/PatientRecords/${userId}/PatientRecord/${patientId}`;
-  
-    const patientRecord = {
-      fields: {
-        patientInfo: {
-          stringValue: patientInfo
-        },
-        asrResponse: {
-          stringValue: asrResponse
-        },
-        gptResponse: {
-          stringValue: gptResponse
-        },
-      }
-    };
-  
-    const options = {
-      method: 'PATCH',
-      headers: { 
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify(patientRecord)
-    };
-  
-    const response = await fetch(apiUrl, options);
-    const data = await response.json();
-  
-    if (!response.ok) {
-      throw new Error(`Failed to upload data to Firestore: ${data.error?.message || 'Unknown error'}`);
-    }
-  };
-  
-  export const fetchSinglePatientRecord = async (
-    patientId: string
-  ): Promise<any> => {
-    const userId = await AsyncStorage.getItem("userID");
-    const token = await AsyncStorage.getItem("userToken");
-    
-    const apiUrl = `https://firestore.googleapis.com/v1/projects/gpt-medical-note/databases/(default)/documents/PatientRecords/${userId}/PatientRecord/${patientId}`;
-  
-    const response = await fetch(apiUrl, {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-  
-    if (!response.ok) {
-      throw new Error(
-        `Failed to fetch patient record: ${response.status}`
-      );
-    }
-  
-    const data = await response.json();
-  
-    return data;
-  };
-  
-  export const deletePatientRecord = async (
-    patientId: string
-  ): Promise<void> => {
-    const userId = await AsyncStorage.getItem("userID");
-    const token = await AsyncStorage.getItem("userToken");
-  
-    const apiUrl = `https://firestore.googleapis.com/v1/projects/gpt-medical-note/databases/(default)/documents/PatientRecords/${userId}/PatientRecord/${patientId}`;
-  
-    const response = await fetch(apiUrl, {
-      method: 'DELETE',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-  
-    if (!response.ok) {
-      throw new Error(
-        `Failed to delete patient record: ${response.status}`
-      );
-    }
-  };
-  
+  patientId: string,
+  patientInfo: string,
+  asrResponse: string,
+  gptResponse: string
+) => {
+  const userId =auth.currentUser?.uid
+
+  if (!userId) {
+    throw new Error('User not authenticated, please log in again');
+  }
+
+  await updateDoc(doc(db, 'PatientRecords', userId, 'PatientRecord', patientId), {
+    patientInfo,
+    asrResponse,
+    gptResponse,
+  });
+};
+
+export const fetchSinglePatientRecord = async (
+  patientId: string
+): Promise<any> => {
+  const userId =auth.currentUser?.uid
+
+  if (!userId) {
+    throw new Error('User not authenticated, please log in again');
+  }
+
+  const docSnap = await getDoc(doc(db, 'PatientRecords', userId, 'PatientRecord', patientId));
+
+  if (!docSnap.exists()) {
+    throw new Error(`Failed to fetch patient record: ${patientId}`);
+  }
+
+  return docSnap.data();
+};
+
+export const deletePatientRecord = async (
+  patientId: string
+): Promise<void> => {
+  const userId =auth.currentUser?.uid
+
+  if (!userId) {
+    throw new Error('User not authenticated, please log in again');
+  }
+
+  await deleteDoc(doc(db, 'PatientRecords', userId, 'PatientRecord', patientId));
+};

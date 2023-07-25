@@ -24,9 +24,8 @@ const SignupScreen = ({ navigation }: { navigation: SignupScreenNavigationProp }
         }
 
         try {
-            const { idToken } = await createUser(email, password);
-            if (idToken) {
-                await AsyncStorage.setItem('userToken', idToken);
+            const user = await createUser(email, password);
+            if (user) {
                 Toast.show({
                     type: 'success',
                     position: 'top',

@@ -56,11 +56,10 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
             try {
                 setIsLoadingData(true); // Start loading
                 const patientRecord = await fetchSinglePatientRecord(patientId);
-
                 if (patientRecord) {
-                    setAsrResponse(patientRecord.fields.asrResponse.stringValue);
-                    setGptResponse(patientRecord.fields.gptResponse.stringValue);
-                    setPatientInfo(patientRecord.fields.patientInfo.stringValue);
+                    setAsrResponse(patientRecord.asrResponse);
+                    setGptResponse(patientRecord.gptResponse);
+                    setPatientInfo(patientRecord.patientInfo);
                 }
             } catch (error) {
                 console.error("Failed to fetch data from Firestore:", error);
@@ -72,7 +71,6 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
         fetchData();
     }, [ patientId]);
 
-    console.log('Data in RecordingScreen:',  patientInfo);
 
     useEffect(() => {
         if (!isLoadingData) { // Only save to AsyncStorage if not loading data
