@@ -1,4 +1,4 @@
-// FirebaseService.ts
+// FirestoreService.ts
 import { db } from '../../firebaseConfig';
 import { collection, getDocs, doc, setDoc, updateDoc, deleteDoc, getDoc } from 'firebase/firestore';
 import { auth } from '../../firebaseConfig';

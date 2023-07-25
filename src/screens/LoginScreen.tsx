@@ -1,12 +1,10 @@
 import React, { useState } from 'react';
-import { Button, TextInput, View, StyleSheet, Alert, Text, TouchableOpacity, TouchableWithoutFeedback, Keyboard } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { FIREBASE_API_KEY } from '@env';
+import { TextInput, View, StyleSheet, Alert, Text, TouchableOpacity, TouchableWithoutFeedback, Keyboard } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { login } from '../services/auth';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view'
-
+import CustomButtom from '../components/CustomButtom';
 
 type LoginScreenNavigationProp = NativeStackNavigationProp<
     RootStackParamList,
@@ -19,10 +17,6 @@ const LoginScreen = ({ navigation }: { navigation: LoginScreenNavigationProp }) 
 
     const handleLogin = async () => {
         try {
-            // const resData = await login(email, password);
-            // if (resData.idToken && resData.localId) {
-            //     await AsyncStorage.setItem('userToken', resData.idToken);
-            //     await AsyncStorage.setItem('userID', resData.localId);
             const user = await login(email, password);
             if (user) {
                 navigation.replace('HomeScreen');
@@ -42,9 +36,7 @@ const LoginScreen = ({ navigation }: { navigation: LoginScreenNavigationProp }) 
                 <View style={styles.inputContainer}>
                     <TextInput style={styles.input} placeholder="Email" onChangeText={setEmail} value={email} />
                     <TextInput style={styles.input} placeholder="Password" onChangeText={setPassword} value={password} secureTextEntry />
-                    <TouchableOpacity onPress={handleLogin} style={styles.button}>
-                        <Text style={styles.buttonText}>Log In</Text>
-                    </TouchableOpacity>
+                    <CustomButtom title="Log In" onPress={handleLogin} />
                     <TouchableOpacity onPress={switchToSignup}>
                         <Text style={styles.signupText}>Don't have an account? Sign up!</Text>
                     </TouchableOpacity>
@@ -73,21 +65,6 @@ const styles = StyleSheet.create({
         color: 'blue',
         textAlign: 'center',
         marginTop: 20,
-    },
-    button: {
-        backgroundColor: '#007BFF',
-        padding: 10,
-        borderRadius: 5,
-        alignItems: 'center',
-        margin: 10,
-        justifyContent: 'center',
-    },
-    disabledButton: {
-        backgroundColor: 'gray', // or another color of your choice
-    },
-    buttonText: {
-        color: 'white',
-        fontSize: 12,
     },
 });
 

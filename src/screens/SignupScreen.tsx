@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { TouchableOpacity, TextInput, View, StyleSheet, Alert, Text, TouchableWithoutFeedback, Keyboard } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { TextInput, View, StyleSheet, Alert, TouchableWithoutFeedback, Keyboard } from 'react-native';
 import { createUser } from '../services/auth';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view'
 import Toast from 'react-native-toast-message';
+import CustomButtom from '../components/CustomButtom';
 
 type SignupScreenNavigationProp = NativeStackNavigationProp<
     RootStackParamList,
@@ -60,10 +60,7 @@ const SignupScreen = ({ navigation }: { navigation: SignupScreenNavigationProp }
                         secureTextEntry
                     />
                     <TextInput style={styles.input} value={confirmPassword} onChangeText={setConfirmPassword} placeholder="Comfirm Password" secureTextEntry />
-
-                    <TouchableOpacity style={styles.button} onPress={signupHandler}>
-                        <Text style={styles.buttonText}>Sign Up</Text>
-                    </TouchableOpacity>
+                    <CustomButtom title="Sign Up" onPress={signupHandler} />
                 </View>
             </KeyboardAwareScrollView>
         </TouchableWithoutFeedback>
@@ -89,21 +86,6 @@ const styles = StyleSheet.create({
         color: 'blue',
         textAlign: 'center',
         marginTop: 20,
-    },
-    button: {
-        backgroundColor: '#007BFF',
-        padding: 10,
-        borderRadius: 5,
-        alignItems: 'center',
-        margin: 10,
-        justifyContent: 'center',
-    },
-    disabledButton: {
-        backgroundColor: 'gray', // or another color of your choice
-    },
-    buttonText: {
-        color: 'white',
-        fontSize: 12,
     },
 });
 
