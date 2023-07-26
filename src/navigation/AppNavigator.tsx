@@ -6,7 +6,6 @@ import HomeScreen from '../screens/HomeScreen';
 import RecordingScreen from '../screens/RecordingScreen';
 import LoginScreen from '../screens/LoginScreen';
 import SignupScreen from '../screens/SignupScreen';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { auth } from '../../firebaseConfig'; // Import your Firebase auth instance
 import { onAuthStateChanged } from 'firebase/auth';
 

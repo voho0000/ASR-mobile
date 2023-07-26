@@ -4,7 +4,7 @@ import { Audio } from 'expo-av';
 import { transcribeAudio } from './transcribeAudio';
 import Toast from 'react-native-toast-message';
 
-export const useRecording = (setText: React.Dispatch<React.SetStateAction<string>>) => {
+export const useRecording = () => {
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
   const [isRecording, setIsRecording] = useState<boolean>(false);
   const [isPaused, setIsPaused] = useState<boolean>(false);
@@ -88,7 +88,6 @@ export const useRecording = (setText: React.Dispatch<React.SetStateAction<string
       if (audioUri) {
         try {
           const transcript = await transcribeAudio(audioUri);
-          setText(transcript);
           Toast.show({
             type: 'success',
             position: 'top',
@@ -98,6 +97,7 @@ export const useRecording = (setText: React.Dispatch<React.SetStateAction<string
             autoHide: true,
             bottomOffset: 40,
           });
+          return transcript;
         } catch (error) {
           console.error('Failed to pause recording:', error);
           Toast.show({
