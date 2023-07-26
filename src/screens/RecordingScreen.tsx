@@ -1,5 +1,6 @@
+// RecordingScreen.tsx
 import { useState, useEffect } from 'react';
-import { StyleSheet, TextInput, View, ScrollView, Text, Alert, TouchableWithoutFeedback, Keyboard, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { StyleSheet, View, ScrollView, Alert, TouchableWithoutFeedback, Keyboard, Dimensions } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { callGPTAPI } from '../services/callGPTAPI';
 import IconButton from '../components/IconButton';
@@ -7,10 +8,8 @@ import { useRecording } from '../services/useRecording';
 import { RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view'
-import sendToServer from '../services/sendToServer';
 import { uploadDataToFirestore, fetchSinglePatientRecord } from '../services/FirestoreService';
-import CustomButtom from '../components/CustomButtom';
-
+import { TextInput, Button, ActivityIndicator, TouchableRipple, Text, Paragraph, Dialog, Portal, HelperText } from 'react-native-paper';
 
 type RecordingScreenRouteProp = RouteProp<RootStackParamList, 'RecordingScreen'>;
 
@@ -24,7 +23,7 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
     const [gptResponse, setGptResponse] = useState<string>(""); // Stores the GPT response
     const [isLoading, setIsLoading] = useState<boolean>(false); // Handles loading state
     const [isLoadingData, setIsLoadingData] = useState(true); // Add a new loading state
-
+    const [isTranscriptLoading, setIsTranscriptLoading] = useState(false);
 
     const {
         recording,
@@ -34,10 +33,10 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
         startRecording,
         stopRecording,
         pauseRecording,
-    } = useRecording(setAsrResponse);
+    } = useRecording();
 
     // Inside your RecordingScreen component, get the item name from route params like so
-    const  patientId = route.params.name;
+    const patientId = route.params.name;
 
     const sendToGPT = async () => {
         setIsLoading(true);
@@ -49,6 +48,16 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
             Alert.alert("Error", "Failed to get response from GPT. Please try again.");
         }
         setIsLoading(false);
+    };
+
+    const msToTime = (duration: number) => {
+        let seconds: number = Math.floor((duration) % 60)
+        let minutes: number = Math.floor((duration / 60) % 60)
+
+        let minutesString = (minutes < 10) ? "0" + minutes : minutes.toString();
+        let secondsString = (seconds < 10) ? "0" + seconds : seconds.toString();
+
+        return minutesString + ":" + secondsString;
     };
 
     useEffect(() => {
@@ -69,26 +78,38 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
         };
 
         fetchData();
-    }, [ patientId]);
+    }, [patientId]);
 
 
     useEffect(() => {
         if (!isLoadingData) { // Only save to AsyncStorage if not loading data
-            uploadDataToFirestore( patientId, patientInfo, asrResponse, gptResponse)
+            uploadDataToFirestore(patientId, patientInfo, asrResponse, gptResponse)
         }
     }, [patientInfo, asrResponse, gptResponse, patientId]); // Add isLoadingData to dependencies
 
+    const windowHeight = Dimensions.get('window').height;
+
+    const handleStopRecording = async () => {
+        setIsTranscriptLoading(true);
+        const transcript = await stopRecording();
+        setAsrResponse(transcript);
+        setIsTranscriptLoading(false);
+    };
 
     return (
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <TouchableRipple onPress={Keyboard.dismiss} style={{ flex: 1 }}>
             <KeyboardAwareScrollView>
-                <ScrollView contentContainerStyle={styles.scrollContainer}>
+                <View style={styles.scrollContainer}>
+                    <Text style={{ fontSize: 16, marginBottom: 5, textAlign: 'center' }}>Patient ID: {patientId}</Text>
                     <TextInput
+                        label="Patient Info"
+                        mode="outlined"
                         multiline
-                        style={styles.textInput}
+                        style={{ height: windowHeight * 0.15, borderColor: 'gray', borderWidth: 1, width: '100%', marginBottom: 10 }}
                         placeholder="Enter patient info here"
-                        onChangeText={setPatientInfo} // you need to define this function to update the state
-                        value={patientInfo} // and this state to store the patient info
+                        onChangeText={setPatientInfo}
+                        value={patientInfo}
+                        scrollEnabled
                     />
                     <View style={styles.buttonsContainer}>
                         {isRecording ? (
@@ -98,7 +119,7 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
                                     iconName={isPaused ? "play" : "pause"}
                                 />
                                 <IconButton
-                                    onPress={stopRecording}
+                                    onPress={handleStopRecording}
                                     iconName="stop"
                                 />
                             </>
@@ -108,76 +129,49 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
                                 iconName="microphone"
                             />
                         )}
-                        <Text>Record Time: {counter} s</Text>
+                        {isTranscriptLoading && <ActivityIndicator size="small" style={{ marginRight: 30 }} />}
+                        <Text>{msToTime(counter)}</Text>
                     </View>
                     <TextInput
+                        label="ASR result"
+                        mode="outlined"
                         multiline
-                        style={styles.textInput}
-                        onChangeText={setAsrResponse}
+                        style={{ height: windowHeight * 0.2, borderColor: 'gray', borderWidth: 1, width: '100%', marginTop: 10, marginBottom: 10 }}
                         value={asrResponse}
-                        placeholder = "Start recording to get ASR result"
+                        onChangeText={setAsrResponse}
+                        placeholder="Start recording to get ASR result"
+                        scrollEnabled
                     />
-                    {/* <Button title="Send to GPT" onPress={sendToGPT} disabled={isLoading} /> */}
-                    <TouchableOpacity
-                        onPress={sendToGPT}
-                        style={[styles.button, isLoading ? styles.disabledButton : null]}
-                        disabled={isLoading}
-                    >
-                        <Text style={styles.buttonText}>Send to GPT</Text>
-                        {isLoading && <ActivityIndicator size="small" color="#ffffff" />}
-                    </TouchableOpacity>
+                    <Button mode="contained" onPress={sendToGPT} loading={isLoading}>Send to GPT</Button>
                     <TextInput
+                        label="GPT result"
+                        mode="outlined"
                         multiline
-                        style={styles.textInput}
+                        style={{ height: windowHeight * 0.25, borderColor: 'gray', borderWidth: 1, width: '100%', marginTop: 10, marginBottom: 20 }}
                         value={gptResponse}
                         onChangeText={setGptResponse}
-                        placeholder = "GPT response"
+                        placeholder="Medical note generated by GPT"
+                        scrollEnabled
                     />
-                    {/* <CustomButtom title="Send to server" onPress={() => sendToServer(gptResponse)} /> */} 
                     <StatusBar style="auto" />
-                </ScrollView>
+                </View>
             </KeyboardAwareScrollView>
-        </TouchableWithoutFeedback>
+        </TouchableRipple>
     );
 };
 
 const styles = StyleSheet.create({
     scrollContainer: {
-        flexGrow: 1,
+        flex: 1,
         padding: 10,
         justifyContent: 'center',
-        alignItems: 'center',
-    },
-    textInput: {
-        height: 200,
-        borderColor: 'gray',
-        borderWidth: 1,
-        marginTop: 10,
-        marginBottom: 10,
-        width: '80%',
-        padding: 5
+        // alignItems: 'center',
     },
     buttonsContainer: {
         flexDirection: 'row',
-        justifyContent: 'center',
+        justifyContent: 'space-between',
         alignItems: 'center',
     },
-    button: {
-        backgroundColor: '#007BFF',
-        padding: 10,
-        borderRadius: 5,
-        alignItems: 'center',
-        margin: 10,
-        justifyContent: 'center',
-    },
-    disabledButton: {
-        backgroundColor: 'gray', // or another color of your choice
-    },
-    buttonText: {
-        color: 'white',
-        fontSize: 12,
-    },
-
 });
 
 export default RecordingScreen;
