@@ -5,8 +5,7 @@ export const callGPTAPI = async (inputText: string) => {
       const prompt = `
       The following is the summary of the present illness. 
       As you are a doctor helper, please transform the following text to the professional medical note.
-      Text: "
-      `;
+      Text: `;
     const content = {
         "model": "gpt-4",
         "messages": [

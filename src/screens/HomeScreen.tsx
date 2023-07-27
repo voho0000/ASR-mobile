@@ -75,7 +75,6 @@ const HomeScreen = () => {
 
     return (
         <SafeAreaView style={{ flex: 1, marginTop: Platform.OS === 'android' ? 24 : 0 }}>
-
             <View style={{ flex: 1, padding: 10, backgroundColor: '#fff' }}>
                 <Portal>
                     <Dialog visible={addDialogVisible} onDismiss={hideAddDialog}>

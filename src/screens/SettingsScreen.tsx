@@ -3,7 +3,7 @@ import { View, StyleSheet } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { useNavigation } from '@react-navigation/native';
-import { Button, Dialog, Portal, Paragraph, List } from 'react-native-paper';
+import { Button, Dialog, Portal, Paragraph, List, Divider } from 'react-native-paper';
 import { logout } from '../services/auth';
 
 type SettingsScreenNavigationProp = NativeStackNavigationProp<
@@ -25,16 +25,21 @@ const SettingsScreen: React.FC<Props> = ({ }) => {
     return (
         <View style={styles.container}>
             <List.Section>
-                <List.Item 
-                    title="Go to Profile"
+                <Divider />
+                <List.Item
+                    title="Profile"
                     left={() => <List.Icon icon="account" />}
                     onPress={() => navigation.navigate('ProfileScreen')}
+                    style={{paddingTop: 20, paddingBottom: 20 }}
                 />
-                <List.Item 
-                    title="Go to Preferences"
+                <Divider />
+                <List.Item
+                    title="Preferences"
                     left={() => <List.Icon icon="cog" />}
                     onPress={() => navigation.navigate('PreferenceScreen')}
+                    style={{paddingTop: 20, paddingBottom: 20 }}
                 />
+                <Divider />
             </List.Section>
 
             <View style={styles.logoutContainer}>
@@ -63,7 +68,7 @@ const SettingsScreen: React.FC<Props> = ({ }) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        justifyContent: 'center',
+        justifyContent: 'space-between',
         padding: 16,
     },
     logoutContainer: {

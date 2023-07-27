@@ -1,14 +1,13 @@
 // SignupScreen.tsx
 import React, { useState } from 'react';
-import { View, StyleSheet, Alert, TouchableWithoutFeedback, Keyboard } from 'react-native';
-import { createUser } from '../services/auth';
+import { View, StyleSheet, TouchableWithoutFeedback, Keyboard } from 'react-native';
+import { createUser} from '../services/auth';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view'
 import Toast from 'react-native-toast-message';
-import CustomButtom from '../components/CustomButtom';
 import { TextInput, Button, HelperText, Snackbar, Text } from 'react-native-paper';
-
+import { initializePreferences } from '../services/FirestoreService';
 
 type SignupScreenNavigationProp = NativeStackNavigationProp<
     RootStackParamList,
@@ -28,20 +27,25 @@ const SignupScreen = ({ navigation }: { navigation: SignupScreenNavigationProp }
             setVisible(true);
             return;
         }
-
         try {
             const user = await createUser(email, password);
             if (user) {
-                Toast.show({
-                    type: 'success',
-                    position: 'top',
-                    text1: 'Success',
-                    text2: 'Successfully created account',
-                    visibilityTime: 2000,
-                    autoHide: true,
-                    bottomOffset: 40,
-                });
-                navigation.replace('LoginScreen');
+                try {
+                    await initializePreferences();  // Initialize the preferences document for this user
+                    Toast.show({
+                        type: 'success',
+                        position: 'top',
+                        text1: 'Success',
+                        text2: 'Successfully created account',
+                        visibilityTime: 2000,
+                        autoHide: true,
+                        bottomOffset: 40,
+                    });
+                    navigation.replace('LoginScreen');
+                  } catch (error) {
+                    console.error('Failed to initialize preferences:', error);
+                    // Handle the error, possibly by informing the user about it
+                  }
             }
         } catch (error: any) {
             setErrorMessage('Signup failed: ' + error.message);
