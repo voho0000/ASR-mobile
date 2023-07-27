@@ -5,7 +5,7 @@ import { auth } from '../../firebaseConfig';
 
 export const fetchPatientRecords = async (): Promise<string[]> => {
 
-  const userId =auth.currentUser?.uid
+  const userId = auth.currentUser?.uid
 
   if (!userId) {
     throw new Error('User not authenticated, please log in again');
@@ -19,7 +19,7 @@ export const fetchPatientRecords = async (): Promise<string[]> => {
 };
 
 export const addPatientRecord = async (patientId: string): Promise<void> => {
-  const userId =auth.currentUser?.uid
+  const userId = auth.currentUser?.uid
 
   if (!userId) {
     throw new Error('User not authenticated, please log in again');
@@ -39,7 +39,7 @@ export const uploadDataToFirestore = async (
   asrResponse: string,
   gptResponse: string
 ) => {
-  const userId =auth.currentUser?.uid
+  const userId = auth.currentUser?.uid
 
   if (!userId) {
     throw new Error('User not authenticated, please log in again');
@@ -55,7 +55,7 @@ export const uploadDataToFirestore = async (
 export const fetchSinglePatientRecord = async (
   patientId: string
 ): Promise<any> => {
-  const userId =auth.currentUser?.uid
+  const userId = auth.currentUser?.uid
 
   if (!userId) {
     throw new Error('User not authenticated, please log in again');
@@ -73,11 +73,64 @@ export const fetchSinglePatientRecord = async (
 export const deletePatientRecord = async (
   patientId: string
 ): Promise<void> => {
-  const userId =auth.currentUser?.uid
+  const userId = auth.currentUser?.uid
 
   if (!userId) {
     throw new Error('User not authenticated, please log in again');
   }
 
   await deleteDoc(doc(db, 'PatientRecords', userId, 'PatientRecord', patientId));
+};
+
+export const initializePreferences = async (): Promise<void> => {
+  const userId = auth.currentUser?.uid;
+
+  if (!userId) {
+    throw new Error('User not authenticated, please log in again');
+  }
+
+  await setDoc(doc(db, 'Preferences', userId), {
+    commonWords: `病史, 主訴, 家族史, 過敏`,
+    gptPrompt: `The following is the summary of the present illness. As you are a doctor helper, please transform the following text to the professional medical note. Text: `
+  });
+};
+
+export const updateCommonWords = async (commonWords: string): Promise<void> => {
+  const userId = auth.currentUser?.uid;
+
+  if (!userId) {
+    throw new Error('User not authenticated, please log in again');
+  }
+
+  await updateDoc(doc(db, 'Preferences', userId), {
+    commonWords,
+  });
+};
+
+export const updateGptPrompt = async (gptPrompt: string): Promise<void> => {
+  const userId = auth.currentUser?.uid;
+
+  if (!userId) {
+    throw new Error('User not authenticated, please log in again');
+  }
+
+  await updateDoc(doc(db, 'Preferences', userId), {
+    gptPrompt,
+  });
+};
+
+export const fetchPreferences = async () => {
+  const userId = auth.currentUser?.uid;
+
+  if (!userId) {
+    throw new Error('User not authenticated, please log in again');
+  }
+
+  const docSnap = await getDoc(doc(db, 'Preferences', userId));
+
+  if (!docSnap.exists()) {
+    throw new Error(`Failed to fetch preferences for user: ${userId}`);
+  }
+
+  return docSnap.data();
 };
