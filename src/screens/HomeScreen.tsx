@@ -5,9 +5,9 @@ import { useNavigation, useIsFocused } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { fetchPatientRecords, addPatientRecord, deletePatientRecord } from '../services/FirestoreService';
-import { logout } from '../services/auth';
-import { Button, List, Dialog, Portal, Paragraph, TextInput, HelperText, IconButton, Divider  } from 'react-native-paper';  // Imported from react-native-paper
+import { Button, List, Dialog, Portal, Paragraph, TextInput, HelperText, IconButton, Divider } from 'react-native-paper';  // Imported from react-native-paper
 import { TouchableWithoutFeedback, Keyboard } from 'react-native';
+import { SafeAreaView } from 'react-native';
 
 // import CustomButtom from '../components/CustomButtom';
 
@@ -25,10 +25,6 @@ const HomeScreen = () => {
 
     const showDialog = () => setVisible(true);
     const hideDialog = () => setVisible(false);
-
-    const [logoutVisible, setLogoutVisible] = useState(false);
-    const showLogoutDialog = () => setLogoutVisible(true);
-    const hideLogoutDialog = () => setLogoutVisible(false);
 
     const [addDialogVisible, setAddDialogVisible] = useState(false);
     const [inputValue, setInputValue] = useState('');
@@ -78,88 +74,75 @@ const HomeScreen = () => {
     };
 
     return (
-        <View style={{ flex: 1, padding: 10, backgroundColor: '#fff' }}>
-            <Button mode="contained" onPress={showAddDialog}>Add a Patient</Button>
-            <Portal>
-                <Dialog visible={addDialogVisible} onDismiss={hideAddDialog}>
-                    <Dialog.Title>Add a Patient</Dialog.Title>
-                    <Dialog.Content>
-                        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-                            <View>
-                                <TextInput
-                                    label="Patient ID"
-                                    value={inputValue}
-                                    onChangeText={text => {
-                                        setInputValue(text);
-                                        setIsInputValid(!items.includes(text)); // update validation state whenever the text changes
+        <SafeAreaView style={{ flex: 1, marginTop: Platform.OS === 'android' ? 24 : 0 }}>
+
+            <View style={{ flex: 1, padding: 10, backgroundColor: '#fff' }}>
+                <Portal>
+                    <Dialog visible={addDialogVisible} onDismiss={hideAddDialog}>
+                        <Dialog.Title>Add a Patient</Dialog.Title>
+                        <Dialog.Content>
+                            <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+                                <View>
+                                    <TextInput
+                                        label="Patient ID"
+                                        value={inputValue}
+                                        onChangeText={text => {
+                                            setInputValue(text);
+                                            setIsInputValid(!items.includes(text)); // update validation state whenever the text changes
+                                        }}
+                                        style={{ backgroundColor: 'white' }}
+                                    />
+                                    <HelperText type="error" visible={!isInputValid}>
+                                        Patient ID already exists. Please enter a unique ID.
+                                    </HelperText>
+                                </View>
+                            </TouchableWithoutFeedback>
+                        </Dialog.Content>
+                        <Dialog.Actions>
+                            <Button onPress={hideAddDialog}>Cancel</Button>
+                            <Button onPress={handleAddPatient} disabled={!isInputValid || inputValue.trim() === ''}>Add</Button>
+                        </Dialog.Actions>
+                    </Dialog>
+                </Portal>
+                <FlatList
+                    data={items}
+                    keyExtractor={(item, index) => index.toString()}
+                    renderItem={({ item, index }) => (
+                        <List.Item
+                            title={item}
+                            onPress={() => handlePressItem(item)}
+                            right={props =>
+                                <IconButton
+                                    {...props}
+                                    icon="delete"
+                                    size={30}
+                                    onPress={() => {
+                                        setSelectedIndex(index);
+                                        showDialog();
                                     }}
-                                    style={{ backgroundColor: 'white' }}
                                 />
-                                <HelperText type="error" visible={!isInputValid}>
-                                    Patient ID already exists. Please enter a unique ID.
-                                </HelperText>
-                            </View>
-                        </TouchableWithoutFeedback>
-                    </Dialog.Content>
-                    <Dialog.Actions>
-                        <Button onPress={hideAddDialog}>Cancel</Button>
-                        <Button onPress={handleAddPatient} disabled={!isInputValid || inputValue.trim() === ''}>Add</Button>
-                    </Dialog.Actions>
-                </Dialog>
-            </Portal>
-            <FlatList
-                data={items}
-                keyExtractor={(item, index) => index.toString()}
-                renderItem={({ item, index }) => (
-                    <List.Item
-                        title={item}
-                        onPress={() => handlePressItem(item)}
-                        right={props =>
-                            <IconButton
-                                {...props}
-                                icon="delete"
-                                size={30}
-                                onPress={() => {
-                                    setSelectedIndex(index);
-                                    showDialog();
-                                }}
-                            />
-                        }
-                    />
-                )}
-                ItemSeparatorComponent={() => <Divider />}
-            />
-            <Button mode="outlined" onPress={() => {
-                showLogoutDialog()
-            }}>Log Out</Button>
-            <Portal>
-                <Dialog visible={visible} onDismiss={hideDialog}>
-                    <Dialog.Title>Delete item</Dialog.Title>
-                    <Dialog.Content>
-                        <Paragraph>Are you sure you want to delete this item?</Paragraph>
-                    </Dialog.Content>
-                    <Dialog.Actions>
-                        <Button onPress={hideDialog}>No</Button>
-                        <Button onPress={() => { hideDialog(); deleteItem() }}>Yes</Button>
-                    </Dialog.Actions>
-                </Dialog>
-            </Portal>
-            <Portal>
-                <Dialog visible={logoutVisible} onDismiss={hideLogoutDialog}>
-                    <Dialog.Title>Log Out</Dialog.Title>
-                    <Dialog.Content>
-                        <Paragraph>Are you sure you want to log out?</Paragraph>
-                    </Dialog.Content>
-                    <Dialog.Actions>
-                        <Button onPress={hideLogoutDialog}>No</Button>
-                        <Button onPress={() => {
-                            hideLogoutDialog();
-                            logout().then(() => navigation.replace('LoginScreen'));
-                        }}>Yes</Button>
-                    </Dialog.Actions>
-                </Dialog>
-            </Portal>
-        </View>
+                            }
+                        />
+                    )}
+                    ItemSeparatorComponent={() => <Divider />}
+                />
+                <Portal>
+                    <Dialog visible={visible} onDismiss={hideDialog}>
+                        <Dialog.Title>Delete item</Dialog.Title>
+                        <Dialog.Content>
+                            <Paragraph>Are you sure you want to delete this item?</Paragraph>
+                        </Dialog.Content>
+                        <Dialog.Actions>
+                            <Button onPress={hideDialog}>No</Button>
+                            <Button onPress={() => { hideDialog(); deleteItem() }}>Yes</Button>
+                        </Dialog.Actions>
+                    </Dialog>
+                </Portal>
+                <Button mode="contained" onPress={showAddDialog}>Add a Patient</Button>
+
+            </View>
+        </SafeAreaView>
+
     );
 };
 

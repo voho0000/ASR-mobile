@@ -22,7 +22,7 @@ const LoginScreen = ({ navigation }: { navigation: LoginScreenNavigationProp }) 
         try {
             const user = await login(email, password);
             if (user) {
-                navigation.replace('HomeScreen');
+                navigation.replace('HomeTabs');
             }
         } catch (error: any) {
             setSnackbarMessage(`Authentication failed: ${error.message}`); // set the Snackbar message

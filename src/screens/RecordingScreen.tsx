@@ -1,6 +1,6 @@
 // RecordingScreen.tsx
 import { useState, useEffect } from 'react';
-import { StyleSheet, View, ScrollView, Alert, TouchableWithoutFeedback, Keyboard, Dimensions } from 'react-native';
+import { StyleSheet, View, ScrollView, Alert, TouchableWithoutFeedback, Keyboard, Dimensions, Platform } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { callGPTAPI } from '../services/callGPTAPI';
 import IconButton from '../components/IconButton';
@@ -10,6 +10,8 @@ import { RootStackParamList } from '../navigation/AppNavigator';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view'
 import { uploadDataToFirestore, fetchSinglePatientRecord } from '../services/FirestoreService';
 import { TextInput, Button, ActivityIndicator, TouchableRipple, Text, Paragraph, Dialog, Portal, HelperText } from 'react-native-paper';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { SafeAreaView } from 'react-native';
 
 type RecordingScreenRouteProp = RouteProp<RootStackParamList, 'RecordingScreen'>;
 
@@ -97,66 +99,68 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
     };
 
     return (
-        <TouchableRipple onPress={Keyboard.dismiss} style={{ flex: 1 }}>
-            <KeyboardAwareScrollView>
-                <View style={styles.scrollContainer}>
-                    <Text style={{ fontSize: 16, marginBottom: 5, textAlign: 'center' }}>Patient ID: {patientId}</Text>
-                    <TextInput
-                        label="Patient Info"
-                        mode="outlined"
-                        multiline
-                        style={{ height: windowHeight * 0.15, width: '100%', marginBottom: 10 }}
-                        placeholder="Enter patient info here"
-                        onChangeText={setPatientInfo}
-                        value={patientInfo}
-                        scrollEnabled
-                    />
-                    <View style={styles.buttonsContainer}>
-                        {isRecording ? (
-                            <>
+        <SafeAreaView style={{ flex: 1, marginTop: Platform.OS === 'android' ? 24 : 0 }}>
+            <TouchableRipple onPress={Keyboard.dismiss} style={{ flex: 1 }}>
+                <KeyboardAwareScrollView>
+                    <View style={styles.scrollContainer}>
+                        <Text style={{ fontSize: 16, marginBottom: 5, textAlign: 'center' }}>Patient ID: {patientId}</Text>
+                        <TextInput
+                            label="Patient Info"
+                            mode="outlined"
+                            multiline
+                            style={{ height: windowHeight * 0.15, width: '100%', marginBottom: 10 }}
+                            placeholder="Enter patient info here"
+                            onChangeText={setPatientInfo}
+                            value={patientInfo}
+                            scrollEnabled
+                        />
+                        <View style={styles.buttonsContainer}>
+                            {isRecording ? (
+                                <>
+                                    <IconButton
+                                        onPress={isPaused ? startRecording : pauseRecording}
+                                        iconName={isPaused ? "play" : "pause"}
+                                    />
+                                    <IconButton
+                                        onPress={handleStopRecording}
+                                        iconName="stop"
+                                    />
+                                </>
+                            ) : (
                                 <IconButton
-                                    onPress={isPaused ? startRecording : pauseRecording}
-                                    iconName={isPaused ? "play" : "pause"}
+                                    onPress={startRecording}
+                                    iconName="microphone"
                                 />
-                                <IconButton
-                                    onPress={handleStopRecording}
-                                    iconName="stop"
-                                />
-                            </>
-                        ) : (
-                            <IconButton
-                                onPress={startRecording}
-                                iconName="microphone"
-                            />
-                        )}
-                        {isTranscriptLoading && <ActivityIndicator size="small" style={{ marginRight: 30 }} />}
-                        <Text>{msToTime(counter)}</Text>
+                            )}
+                            {isTranscriptLoading && <ActivityIndicator size="small" style={{ marginRight: 30 }} />}
+                            <Text>{msToTime(counter)}</Text>
+                        </View>
+                        <TextInput
+                            label="ASR result"
+                            mode="outlined"
+                            multiline
+                            style={{ height: windowHeight * 0.2, width: '100%', marginTop: 10, marginBottom: 10 }}
+                            value={asrResponse}
+                            onChangeText={setAsrResponse}
+                            placeholder="Start recording to get ASR result"
+                            scrollEnabled
+                        />
+                        <Button mode="contained" onPress={sendToGPT} loading={isLoading}>Send to GPT</Button>
+                        <TextInput
+                            label="GPT result"
+                            mode="outlined"
+                            multiline
+                            style={{ height: windowHeight * 0.25, width: '100%', marginTop: 10, marginBottom: 20 }}
+                            value={gptResponse}
+                            onChangeText={setGptResponse}
+                            placeholder="Medical note generated by GPT"
+                            scrollEnabled
+                        />
+                        <StatusBar style="auto" />
                     </View>
-                    <TextInput
-                        label="ASR result"
-                        mode="outlined"
-                        multiline
-                        style={{ height: windowHeight * 0.2, width: '100%', marginTop: 10, marginBottom: 10 }}
-                        value={asrResponse}
-                        onChangeText={setAsrResponse}
-                        placeholder="Start recording to get ASR result"
-                        scrollEnabled
-                    />
-                    <Button mode="contained" onPress={sendToGPT} loading={isLoading}>Send to GPT</Button>
-                    <TextInput
-                        label="GPT result"
-                        mode="outlined"
-                        multiline
-                        style={{ height: windowHeight * 0.25, width: '100%', marginTop: 10, marginBottom: 20 }}
-                        value={gptResponse}
-                        onChangeText={setGptResponse}
-                        placeholder="Medical note generated by GPT"
-                        scrollEnabled
-                    />
-                    <StatusBar style="auto" />
-                </View>
-            </KeyboardAwareScrollView>
-        </TouchableRipple>
+                </KeyboardAwareScrollView>
+            </TouchableRipple>
+        </SafeAreaView>
     );
 };
 
