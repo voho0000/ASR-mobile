@@ -30,16 +30,23 @@ const SettingsScreen: React.FC<Props> = ({ }) => {
                     title="Profile"
                     left={() => <List.Icon icon="account" />}
                     onPress={() => navigation.navigate('ProfileScreen')}
-                    style={{paddingTop: 20, paddingBottom: 20 }}
+                    style={{ paddingTop: 20, paddingBottom: 20 }}
                 />
                 <Divider />
                 <List.Item
                     title="Preferences"
                     left={() => <List.Icon icon="cog" />}
                     onPress={() => navigation.navigate('PreferenceScreen')}
-                    style={{paddingTop: 20, paddingBottom: 20 }}
+                    style={{ paddingTop: 20, paddingBottom: 20 }}
                 />
                 <Divider />
+                {/* <List.Item
+                    title="Prompts"
+                    left={() => <List.Icon icon="book" />}
+                    onPress={() => navigation.navigate('PromptListScreen')}
+                    style={{ paddingTop: 20, paddingBottom: 20 }}
+                />
+                <Divider /> */}
             </List.Section>
 
             <View style={styles.logoutContainer}>

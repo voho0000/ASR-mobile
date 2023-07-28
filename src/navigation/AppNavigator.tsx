@@ -9,6 +9,8 @@ import SignupScreen from '../screens/SignupScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import PreferenceScreen from '../screens/PreferenceScreen';
+import PromptListScreen from '../screens/PromptListScreen';
+import PromptDetailScreen from '../screens/PromptDetailScreen';
 import { auth } from '../../firebaseConfig'; // Import your Firebase auth instance
 import { onAuthStateChanged } from 'firebase/auth';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -28,7 +30,10 @@ export type RootStackParamList = {
   ProfileScreen: undefined;
   PreferenceScreen: undefined;
   SettingsScreen: undefined;
+  // PromptListScreen: undefined;
+  // PromptDetailScreen: { prompt?: string };
 };
+
 
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -98,10 +103,12 @@ const AppNavigator = () => {
           options={{ title: '' }} // This will be displayed in the header
         />
         <Stack.Screen name="RecordingScreen" component={RecordingScreen} options={{ title: 'Detail' }} />
-        <Stack.Screen name="LoginScreen" component={LoginScreen}options={{ title: 'Log In' }} />
-        <Stack.Screen name="SignupScreen" component={SignupScreen} options={{ title: 'Sign Up' }}/>
-        <Stack.Screen name="ProfileScreen" component={ProfileScreen} options={{ title: 'Profile' }}/>
+        <Stack.Screen name="LoginScreen" component={LoginScreen} options={{ title: 'Log In' }} />
+        <Stack.Screen name="SignupScreen" component={SignupScreen} options={{ title: 'Sign Up' }} />
+        <Stack.Screen name="ProfileScreen" component={ProfileScreen} options={{ title: 'Profile' }} />
         <Stack.Screen name="PreferenceScreen" component={PreferenceScreen} options={{ title: 'Preference' }} />
+        {/* <Stack.Screen name="PromptListScreen" component={PromptListScreen} options={{ title: 'Prompts' }} />
+        <Stack.Screen name="PromptDetailScreen" component={PromptDetailScreen} options={{ title: 'Prompt Detail' }} /> */}
       </Stack.Navigator>
     </NavigationContainer>
   );
