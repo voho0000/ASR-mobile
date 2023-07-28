@@ -94,7 +94,7 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
     const handleStopRecording = async () => {
         setIsTranscriptLoading(true);
         const transcript = await stopRecording();
-        setAsrResponse(transcript);
+        setAsrResponse(prevAsrResponse => `${prevAsrResponse} ${transcript}`);
         setIsTranscriptLoading(false);
     };
 

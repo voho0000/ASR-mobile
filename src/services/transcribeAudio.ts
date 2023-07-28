@@ -1,11 +1,20 @@
 // transcribeAudio.ts
 import { OPENAI_API_KEY } from '@env';
 import { Platform } from 'react-native';
-
+import { fetchPreferences } from './FirestoreService';
 
 export const transcribeAudio = async (audioUri: string) => {
     const data = new FormData();
-
+    try {
+        const preferences = await fetchPreferences();
+        if (preferences.commonWords){
+            data.append('prompt', preferences.commonWords)
+        }
+    } catch (error) {
+        console.error('Failed to fetch preferences:', error);
+        // Handle the error, possibly by informing the user about it
+    }
+console.log(data)
     if (Platform.OS === 'web') {
       const response = await fetch(audioUri);
       const blob = await response.blob();
@@ -17,7 +26,6 @@ export const transcribeAudio = async (audioUri: string) => {
     }
   
     data.append('model', 'whisper-1');
-    //   data.append('prompt', 'The following is about medical summary of a patient. Answer in traditional chinese and english')
 
     try {
         const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
