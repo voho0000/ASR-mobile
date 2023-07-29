@@ -1,6 +1,6 @@
 // RecordingScreen.tsx
 import { useState, useEffect } from 'react';
-import { StyleSheet, View, ScrollView, Alert, TouchableWithoutFeedback, Keyboard, Dimensions, Platform } from 'react-native';
+import { StyleSheet, View, ScrollView, Alert, TouchableWithoutFeedback, Keyboard, Dimensions, Platform, Modal } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { callGPTAPI } from '../services/callGPTAPI';
 import IconButton from '../components/IconButton';
@@ -8,16 +8,24 @@ import { useRecording } from '../services/useRecording';
 import { RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view'
-import { uploadDataToFirestore, fetchSinglePatientRecord } from '../services/FirestoreService';
+import { uploadDataToFirestore, fetchSinglePatientRecord, fetchPrompts, fetchSinglePrompt } from '../services/FirestoreService';
 import { TextInput, Button, ActivityIndicator, TouchableRipple, Text, Paragraph, Dialog, Portal, HelperText } from 'react-native-paper';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { SafeAreaView } from 'react-native';
+import DropDownPicker from 'react-native-dropdown-picker';
+import { Dropdown } from 'react-native-element-dropdown';
+import SelectDropdown from "react-native-select-dropdown";
 
 type RecordingScreenRouteProp = RouteProp<RootStackParamList, 'RecordingScreen'>;
 
 type Props = {
     route: RecordingScreenRouteProp;
 };
+
+interface Prompt {
+    name: string;
+    promptContent: string;
+}
 
 const RecordingScreen: React.FC<Props> = ({ route }) => {
     const [patientInfo, setPatientInfo] = useState<string>("");
@@ -26,6 +34,24 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
     const [isLoading, setIsLoading] = useState<boolean>(false); // Handles loading state
     const [isLoadingData, setIsLoadingData] = useState(true); // Add a new loading state
     const [isTranscriptLoading, setIsTranscriptLoading] = useState(false);
+    const [prompts, setPrompts] = useState<Prompt[]>([]);
+    const [selectedPrompt, setSelectedPrompt] = useState<string>('');
+    const [isDropdownFocused, setIsDropdownFocused] = useState(false);
+
+    const formattedPrompts = prompts.map(prompt => prompt.name); // For SelectDropdown we only need the names
+
+    useEffect(() => {
+        const fetchUserPrompts = async () => {
+            try {
+                const promptsData = await fetchPrompts();
+                setPrompts(promptsData);
+            } catch (error) {
+                console.error("Failed to fetch prompts:", error);
+            }
+        };
+
+        fetchUserPrompts();
+    }, []);
 
     const {
         recording,
@@ -42,8 +68,9 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
 
     const sendToGPT = async () => {
         setIsLoading(true);
+        const selectedPromptData = await fetchSinglePrompt(selectedPrompt)
         try {
-            const response = await callGPTAPI(asrResponse);
+            const response = await callGPTAPI(asrResponse, selectedPromptData.promptContent);
             setGptResponse(response);
         } catch (error) {
             console.error("Failed to get response from GPT:", error);
@@ -108,32 +135,70 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
                             label="Patient Info"
                             mode="outlined"
                             multiline
-                            style={{ height: windowHeight * 0.15, width: '100%', marginBottom: 10 }}
+                            style={{ height: windowHeight * 0.12, width: '100%', marginBottom: 10 }}
                             placeholder="Enter patient info here"
                             onChangeText={setPatientInfo}
                             value={patientInfo}
                             scrollEnabled
                         />
-                        <View style={styles.buttonsContainer}>
-                            {isRecording ? (
-                                <>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', paddingRight: 20 }}>
+                            <View style={{
+                                justifyContent: 'space-between', flex: 0.25, flexDirection: 'row',
+                                paddingLeft: 20,
+                            }}>
+                                {isRecording ? (
+                                    <>
+                                        <IconButton
+                                            onPress={isPaused ? startRecording : pauseRecording}
+                                            iconName={isPaused ? "play" : "pause"}
+                                        />
+                                        <IconButton
+                                            onPress={handleStopRecording}
+                                            iconName="stop"
+                                        />
+                                    </>
+                                ) : (
                                     <IconButton
-                                        onPress={isPaused ? startRecording : pauseRecording}
-                                        iconName={isPaused ? "play" : "pause"}
+                                        onPress={startRecording}
+                                        iconName="microphone"
                                     />
-                                    <IconButton
-                                        onPress={handleStopRecording}
-                                        iconName="stop"
-                                    />
-                                </>
-                            ) : (
-                                <IconButton
-                                    onPress={startRecording}
-                                    iconName="microphone"
+                                )}
+                            </View>
+                            <View style = {{flex: 0.05}}>
+                                {isTranscriptLoading && <ActivityIndicator size="small" style={{paddingRight: 10}} />}
+                            </View>
+                            <View style={{ flex: 0.2 }}>
+                                <Text style={{ fontSize: 16, }}>{msToTime(counter)}</Text>
+                            </View>
+                            <View style={{ flex: 0.4 }}>
+                                <SelectDropdown
+                                    data={formattedPrompts}
+                                    onSelect={(selectedItem, index) => {
+                                        setSelectedPrompt(selectedItem);
+                                    }}
+                                    buttonTextAfterSelection={(selectedItem, index) => {
+                                        // text representing selected item
+                                        return selectedItem;
+                                    }}
+                                    rowTextForSelection={(item, index) => {
+                                        // text for row
+                                        return item;
+                                    }}
+                                    buttonStyle={{
+                                        width: 160,
+                                        height: 50,
+                                        borderColor: '#c4c4c4',
+                                        borderWidth: 1,
+                                        borderRadius: 5,
+                                        justifyContent: 'center',
+                                    }}
+                                    buttonTextStyle={{ textAlign: 'center', color: '#757575' }}
+                                    dropdownStyle={{ marginTop: -30 }}
+                                    rowStyle={{ borderColor: '#c4c4c4', borderWidth: 1 }}
+                                    rowTextStyle={{ color: '#757575', textAlign: 'center', paddingLeft: 0 }}
+                                    defaultButtonText="select a prompt"
                                 />
-                            )}
-                            {isTranscriptLoading && <ActivityIndicator size="small" style={{ marginRight: 30 }} />}
-                            <Text>{msToTime(counter)}</Text>
+                            </View>
                         </View>
                         <TextInput
                             label="ASR result"
@@ -150,7 +215,7 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
                             label="GPT result"
                             mode="outlined"
                             multiline
-                            style={{ height: windowHeight * 0.25, width: '100%', marginTop: 10, marginBottom: 20 }}
+                            style={{ height: windowHeight * 0.3, width: '100%', marginTop: 10, marginBottom: 20 }}
                             value={gptResponse}
                             onChangeText={setGptResponse}
                             placeholder="Medical note generated by GPT"
@@ -171,10 +236,42 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         // alignItems: 'center',
     },
-    buttonsContainer: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
+    container: {
+        backgroundColor: 'white',
+        padding: 16,
+    },
+    dropdown: {
+        height: 50,
+        borderColor: 'gray',
+        borderWidth: 0.5,
+        borderRadius: 8,
+        paddingHorizontal: 8,
+    },
+    icon: {
+        marginRight: 5,
+    },
+    label: {
+        position: 'absolute',
+        backgroundColor: 'white',
+        left: 22,
+        top: 8,
+        zIndex: 999,
+        paddingHorizontal: 8,
+        fontSize: 14,
+    },
+    placeholderStyle: {
+        fontSize: 16,
+    },
+    selectedTextStyle: {
+        fontSize: 16,
+    },
+    iconStyle: {
+        width: 20,
+        height: 20,
+    },
+    inputSearchStyle: {
+        height: 40,
+        fontSize: 16,
     },
 });
 

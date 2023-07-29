@@ -52,7 +52,7 @@ const IconButton: React.FC<IconButtonProps> = ({ onPress, iconName }) => {
     <Pressable
       onPress={onPress}
     >
-      <Icon name={iconName} size={40} color="gray" style={{ marginLeft:20, marginRight: 20 }}/>
+      <Icon name={iconName} size={35} color="gray" style={{ marginRight: 20,}}/>
     </Pressable>
   );
 };

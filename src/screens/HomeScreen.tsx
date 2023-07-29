@@ -17,7 +17,7 @@ type HomeScreenNavigationProp = NativeStackNavigationProp<
 >;
 
 const HomeScreen = () => {
-    const [items, setItems] = useState<string[]>([]);
+    const [items, setItems] = useState<{id: string, info: string}[]>([]);
     const navigation = useNavigation<HomeScreenNavigationProp>();
     const isFocused = useIsFocused();
     const [visible, setVisible] = useState(false); // State for Dialog visibility
@@ -48,20 +48,20 @@ const HomeScreen = () => {
     }, [isFocused]);
 
     const handleAddPatient = () => {
-        const newItems = [...items, inputValue];
+        const newItems = [...items, {id: inputValue, info: ''}];
         setItems(newItems);
         addPatientRecord(inputValue);
         hideAddDialog();
         setInputValue(''); // reset input value after adding
     };
 
-    const handlePressItem = (item: string) => {
-        navigation.navigate('RecordingScreen', { name: item });
+    const handlePressItem = (itemId: string) => {
+        navigation.navigate('RecordingScreen', { name: itemId });
     };
 
     const deleteItem = async () => {
         if (selectedIndex !== null) { // ensure selectedIndex is set
-            const patientId = items[selectedIndex];
+            const patientId = items[selectedIndex].id;
             try {
                 // Delete the record from Firestore
                 await deletePatientRecord(patientId);
@@ -87,7 +87,7 @@ const HomeScreen = () => {
                                         value={inputValue}
                                         onChangeText={text => {
                                             setInputValue(text);
-                                            setIsInputValid(!items.includes(text)); // update validation state whenever the text changes
+                                            setIsInputValid(!items.map(item => item.id).includes(text)); // update validation state whenever the text changes
                                         }}
                                         style={{ backgroundColor: 'white' }}
                                     />
@@ -108,8 +108,12 @@ const HomeScreen = () => {
                     keyExtractor={(item, index) => index.toString()}
                     renderItem={({ item, index }) => (
                         <List.Item
-                            title={item}
-                            onPress={() => handlePressItem(item)}
+                            title={item.id}
+                            description={item.info}
+                            descriptionNumberOfLines={2} // limit the number of lines for description
+                            descriptionStyle={{ fontSize: 12, overflow: 'hidden' }} // hide overflowing text
+                            style={{paddingVertical: 0 }} // enforce a consistent height and remove vertical padding
+                            onPress={() => handlePressItem(item.id)}
                             right={props =>
                                 <IconButton
                                     {...props}

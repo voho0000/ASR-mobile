@@ -30,6 +30,7 @@ const SignupScreen = ({ navigation }: { navigation: SignupScreenNavigationProp }
     const [position, setPosition] = useState<PositionType>(null);
     const [openSex, setOpenSex] = useState(false);
     const [openPosition, setOpenPosition] = useState(false);
+
     const today = new Date();
     const isBirthdayToday = birthday.toISOString().slice(0, 10) === today.toISOString().slice(0, 10);
 

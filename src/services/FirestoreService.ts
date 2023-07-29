@@ -54,7 +54,7 @@ const handleFirestoreError = (error: any) => {
 
 
 
-export const fetchPatientRecords = async (): Promise<string[]> => {
+export const fetchPatientRecords = async (): Promise<{id: string, info: string}[]> => {
 
   try {
     const userId = auth.currentUser?.uid;
@@ -66,7 +66,9 @@ export const fetchPatientRecords = async (): Promise<string[]> => {
     const patientRecordsRef = collection(db, 'PatientRecords', userId, 'PatientRecord');
     const patientRecordsSnap = await getDocs(patientRecordsRef);
 
-    return patientRecordsSnap.docs.map(doc => doc.id);
+    // return patientRecordsSnap.docs.map(doc => doc.id);
+    return patientRecordsSnap.docs.map(doc => ({id: doc.id, info: doc.data().patientInfo}));
+
   } catch (error) {
     handleFirestoreError(error as FirebaseError);
     throw error; // re-throw the error after handling it
@@ -291,5 +293,96 @@ export const updateUserInfo = async (sex: string, birthday: Date, position: stri
   } catch (error) {
     handleFirestoreError(error as FirebaseError);
     throw error; // re-throw the error after handling it
+  }
+};
+
+export const fetchPrompts = async (): Promise<any[]> => {
+  try {
+    const userId = auth.currentUser?.uid;
+    if (!userId) {
+      throw new Error('User not authenticated, please log in again');
+    }
+
+    const promptsRef = collection(db, 'Prompts', userId, 'prompt');
+    const promptsSnap = await getDocs(promptsRef);
+
+    return promptsSnap.docs.map(doc => ({ name: doc.id, ...doc.data() }));
+  } catch (error) {
+    handleFirestoreError(error as FirebaseError);
+    throw error;
+  }
+};
+
+export const fetchSinglePrompt = async (promptName: string): Promise<any> => {
+  try {
+    const userId = auth.currentUser?.uid;
+
+    if (!userId) {
+      throw new Error('User not authenticated, please log in again');
+    }
+
+    const docSnap = await getDoc(doc(db, 'Prompts', userId, 'prompt', promptName));
+
+    if (!docSnap.exists()) {
+      throw new Error(`Failed to fetch prompt: ${promptName}`);
+    }
+
+    return { name: docSnap.id, ...docSnap.data() };
+  } catch (error) {
+    handleFirestoreError(error as FirebaseError);
+    throw error;
+  }
+};
+
+
+export const addPrompt = async (promptName: string, promptContent: string): Promise<void> => {
+  try {
+    const userId = auth.currentUser?.uid;
+    if (!userId) {
+      throw new Error('User not authenticated, please log in again');
+    }
+
+    await setDoc(doc(db, 'Prompts', userId, 'prompt', promptName), {
+      promptContent,
+    });
+  } catch (error) {
+    handleFirestoreError(error as FirebaseError);
+    throw error;
+  }
+};
+
+export const updatePrompt = async (oldPromptName: string, newPromptName: string, promptContent: string): Promise<void> => {
+  try {
+    const userId = auth.currentUser?.uid;
+    if (!userId) {
+      throw new Error('User not authenticated, please log in again');
+    }
+
+    if (oldPromptName !== newPromptName) {
+      // delete old prompt
+      await deleteDoc(doc(db, 'Prompts', userId, 'prompt', oldPromptName));
+    }
+
+    // add or update new prompt
+    await setDoc(doc(db, 'Prompts', userId, 'prompt', newPromptName), {
+      promptContent,
+    });
+  } catch (error) {
+    handleFirestoreError(error as FirebaseError);
+    throw error;
+  }
+};
+
+export const deletePrompt = async (promptName: string): Promise<void> => {
+  try {
+    const userId = auth.currentUser?.uid;
+    if (!userId) {
+      throw new Error('User not authenticated, please log in again');
+    }
+
+    await deleteDoc(doc(db, 'Prompts', userId, 'prompt', promptName));
+  } catch (error) {
+    handleFirestoreError(error as FirebaseError);
+    throw error;
   }
 };

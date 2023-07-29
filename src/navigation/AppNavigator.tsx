@@ -1,6 +1,6 @@
 // AppNavigator.tsx
 import React, { useEffect, useState } from 'react';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer} from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import HomeScreen from '../screens/HomeScreen';
 import RecordingScreen from '../screens/RecordingScreen';
@@ -30,10 +30,9 @@ export type RootStackParamList = {
   ProfileScreen: undefined;
   PreferenceScreen: undefined;
   SettingsScreen: undefined;
-  // PromptListScreen: undefined;
-  // PromptDetailScreen: { prompt?: string };
+  PromptListScreen: undefined;
+  PromptDetailScreen: { name?: string, isNew: boolean };
 };
-
 
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -52,21 +51,17 @@ function HomeTabs() {
             iconName = focused ? 'cog' : 'cog';
           }
 
-          // You can return any component that you like here!
           return <FontAwesome name={iconName} size={size} color={color} />;
         },
-        headerShown: false,
         tabBarActiveTintColor: 'tomato',
         tabBarInactiveTintColor: 'gray',
       })}
     >
-      <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen name="Settings" component={SettingsScreen} />
+      <Tab.Screen name="Home" component={HomeScreen} options={{  headerShown: false }} />
+      <Tab.Screen name="Settings" component={SettingsScreen} options={{  headerShown: false }} />
     </Tab.Navigator>
   );
 }
-
-
 
 const AppNavigator = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -92,23 +87,23 @@ const AppNavigator = () => {
   return (
     <NavigationContainer>
       <Stack.Navigator
-        // screenOptions={{
-        //   headerShown: false,
-        // }}
+        screenOptions={{
+          headerShown: true,
+        }}
         initialRouteName={isLogged ? 'HomeTabs' : 'LoginScreen'}
       >
         <Stack.Screen
           name="HomeTabs"
           component={HomeTabs}
-          options={{ title: '' }} // This will be displayed in the header
+          options={{ title: '' }} 
         />
         <Stack.Screen name="RecordingScreen" component={RecordingScreen} options={{ title: 'Detail' }} />
         <Stack.Screen name="LoginScreen" component={LoginScreen} options={{ title: 'Log In' }} />
         <Stack.Screen name="SignupScreen" component={SignupScreen} options={{ title: 'Sign Up' }} />
         <Stack.Screen name="ProfileScreen" component={ProfileScreen} options={{ title: 'Profile' }} />
         <Stack.Screen name="PreferenceScreen" component={PreferenceScreen} options={{ title: 'Preference' }} />
-        {/* <Stack.Screen name="PromptListScreen" component={PromptListScreen} options={{ title: 'Prompts' }} />
-        <Stack.Screen name="PromptDetailScreen" component={PromptDetailScreen} options={{ title: 'Prompt Detail' }} /> */}
+        <Stack.Screen name="PromptListScreen" component={PromptListScreen} options={{ title: 'Prompts' }} />
+        <Stack.Screen name="PromptDetailScreen" component={PromptDetailScreen} options={{ title: 'Prompt Detail' }} />
       </Stack.Navigator>
     </NavigationContainer>
   );
