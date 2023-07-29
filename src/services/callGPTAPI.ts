@@ -2,22 +2,17 @@
 import { OPENAI_API_KEY } from '@env';
 import { fetchPreferences } from './FirestoreService';
 
-export const callGPTAPI = async (inputText: string) => {
+export const callGPTAPI = async (inputText: string, promptContent:string) => {
     try {
         //   const prompt = `
         //   The following is the summary of the present illness. 
         //   As you are a doctor helper, please transform the following text to the professional medical note.
         //   Text: `;
-        let prompt = ''
-        const preferences = await fetchPreferences();
-        if (preferences.gptPrompt) {
-            prompt = preferences.gptPrompt
-        } 
         const content = {
             "model": "gpt-4",
             "messages": [
                 { "role": "system", "content": "You are a helpful assistant." },
-                { "role": "user", "content": prompt + inputText }
+                { "role": "user", "content": promptContent + ' ' + inputText }
             ],
             "temperature": 0.5
         };

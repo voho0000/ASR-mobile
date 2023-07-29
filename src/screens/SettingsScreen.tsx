@@ -40,13 +40,13 @@ const SettingsScreen: React.FC<Props> = ({ }) => {
                     style={{ paddingTop: 20, paddingBottom: 20 }}
                 />
                 <Divider />
-                {/* <List.Item
+                <List.Item
                     title="Prompts"
                     left={() => <List.Icon icon="book" />}
                     onPress={() => navigation.navigate('PromptListScreen')}
                     style={{ paddingTop: 20, paddingBottom: 20 }}
                 />
-                <Divider /> */}
+                <Divider />
             </List.Section>
 
             <View style={styles.logoutContainer}>
