@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Dimensions,  } from 'react-native';
-import { TextInput, Button, HelperText } from 'react-native-paper';
+import { View, Dimensions } from 'react-native';
+import { TextInput, Button, HelperText, ActivityIndicator } from 'react-native-paper';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../navigation/AppNavigator';
@@ -20,6 +20,7 @@ type Props = {
 };
 
 const PromptDetailScreen: React.FC<Props> = ({ route, navigation }) => {
+    const [isLoading, setIsLoading] = useState(true);
     const [name, setName] = useState('');
     const [content, setContent] = useState('');
     const isNew = route.params.isNew
@@ -28,12 +29,14 @@ const PromptDetailScreen: React.FC<Props> = ({ route, navigation }) => {
     const [errorText, setErrorText] = useState('');
 
     useEffect(() => {
-
         if (!isNew && promptName) {
             fetchSinglePrompt(promptName).then((prompt) => {
+                setIsLoading(false);
                 setName(prompt.name);
                 setContent(prompt.promptContent);
             });
+        }else{
+            setIsLoading(false);
         }
     }, [isNew, promptName]);
 
@@ -71,6 +74,14 @@ const PromptDetailScreen: React.FC<Props> = ({ route, navigation }) => {
 
 
     const windowHeight = Dimensions.get('window').height;
+
+    if (isLoading) {
+        return (
+          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+            <ActivityIndicator animating={true} size="large" />
+          </View>
+        );
+      }
 
     return (
         <KeyboardAwareScrollView>

@@ -8,13 +8,11 @@ import { useRecording } from '../services/useRecording';
 import { RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view'
-import { uploadDataToFirestore, fetchSinglePatientRecord, fetchPrompts, fetchSinglePrompt } from '../services/FirestoreService';
+import { uploadDataToFirestore, fetchSinglePatientRecord, fetchPrompts, fetchSinglePrompt, fetchPreferences } from '../services/FirestoreService';
 import { TextInput, Button, ActivityIndicator, TouchableRipple, Text, Paragraph, Dialog, Portal, HelperText } from 'react-native-paper';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { SafeAreaView } from 'react-native';
-import DropDownPicker from 'react-native-dropdown-picker';
-import { Dropdown } from 'react-native-element-dropdown';
 import SelectDropdown from "react-native-select-dropdown";
+import Toast from 'react-native-toast-message';
 
 type RecordingScreenRouteProp = RouteProp<RootStackParamList, 'RecordingScreen'>;
 
@@ -31,14 +29,29 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
     const [patientInfo, setPatientInfo] = useState<string>("");
     const [asrResponse, setAsrResponse] = useState<string>("");
     const [gptResponse, setGptResponse] = useState<string>(""); // Stores the GPT response
-    const [isLoading, setIsLoading] = useState<boolean>(false); // Handles loading state
-    const [isLoadingData, setIsLoadingData] = useState(true); // Add a new loading state
+    const [isLoadingGpt, setIsLoadingGpt] = useState<boolean>(false); // Handles loading state
+    const [isLoading, setIsLoading] = useState(true); // Add a new loading state
     const [isTranscriptLoading, setIsTranscriptLoading] = useState(false);
     const [prompts, setPrompts] = useState<Prompt[]>([]);
     const [selectedPrompt, setSelectedPrompt] = useState<string>('');
-    const [isDropdownFocused, setIsDropdownFocused] = useState(false);
+    const [gptModel, setGptModel] = useState<string>("")
+    const [patientId, setPatientId] = useState<string>(""); // Add a new state for patient ID
 
     const formattedPrompts = prompts.map(prompt => prompt.name); // For SelectDropdown we only need the names
+    const oldPatientId = route.params.name;
+    useEffect(() => {
+        const fetchUserPreferences = async () => {
+            try {
+                const preferences = await fetchPreferences();
+                setGptModel(preferences.gptModel)
+                setSelectedPrompt(preferences.defaultPrompt)
+            } catch (error) {
+                console.error("Failed to fetch prompts:", error);
+            }
+        };
+
+        fetchUserPreferences();
+    }, []);
 
     useEffect(() => {
         const fetchUserPrompts = async () => {
@@ -64,19 +77,34 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
     } = useRecording();
 
     // Inside your RecordingScreen component, get the item name from route params like so
-    const patientId = route.params.name;
 
     const sendToGPT = async () => {
-        setIsLoading(true);
-        const selectedPromptData = await fetchSinglePrompt(selectedPrompt)
+        setIsLoadingGpt(true);
+        let promptContent = '';
+        if (selectedPrompt !== '') {
+            const selectedPromptData = await fetchSinglePrompt(selectedPrompt)
+            promptContent = selectedPromptData.promptContent
+        }
+        const preferences = await fetchPreferences()
         try {
-            const response = await callGPTAPI(asrResponse, selectedPromptData.promptContent);
-            setGptResponse(response);
+            const response = await callGPTAPI(asrResponse, promptContent, preferences.gptModel);
+            if (response) {
+                setGptResponse(response);
+                Toast.show({
+                    type: 'success',
+                    position: 'top',
+                    text1: 'Success',
+                    text2: 'Successfully get response from GPT.',
+                    visibilityTime: 2000,
+                    autoHide: true,
+                    bottomOffset: 40,
+                  });
+            }
         } catch (error) {
             console.error("Failed to get response from GPT:", error);
             Alert.alert("Error", "Failed to get response from GPT. Please try again.");
         }
-        setIsLoading(false);
+        setIsLoadingGpt(false);
     };
 
     const msToTime = (duration: number) => {
@@ -92,8 +120,8 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                setIsLoadingData(true); // Start loading
-                const patientRecord = await fetchSinglePatientRecord(patientId);
+                setIsLoading(true); // Start loading
+                const patientRecord = await fetchSinglePatientRecord(oldPatientId);
                 if (patientRecord) {
                     setAsrResponse(patientRecord.asrResponse);
                     setGptResponse(patientRecord.gptResponse);
@@ -102,17 +130,17 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
             } catch (error) {
                 console.error("Failed to fetch data from Firestore:", error);
             } finally {
-                setIsLoadingData(false); // Finish loading
+                setIsLoading(false); // Finish loading
+                setPatientId(oldPatientId);
             }
         };
 
         fetchData();
-    }, [patientId]);
-
+    }, []);
 
     useEffect(() => {
-        if (!isLoadingData) { // Only save to AsyncStorage if not loading data
-            uploadDataToFirestore(patientId, patientInfo, asrResponse, gptResponse)
+        if (!isLoading) { // Only save to AsyncStorage if not loading data
+            uploadDataToFirestore(oldPatientId, patientId, patientInfo, asrResponse, gptResponse)
         }
     }, [patientInfo, asrResponse, gptResponse, patientId]); // Add isLoadingData to dependencies
 
@@ -125,17 +153,32 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
         setIsTranscriptLoading(false);
     };
 
+    if (isLoading) {
+        return (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                <ActivityIndicator animating={true} size="large" />
+            </View>
+        );
+    }
+
     return (
         <SafeAreaView style={{ flex: 1, marginTop: Platform.OS === 'android' ? 24 : 0 }}>
             <TouchableRipple onPress={Keyboard.dismiss} style={{ flex: 1 }}>
                 <KeyboardAwareScrollView>
                     <View style={styles.scrollContainer}>
-                        <Text style={{ fontSize: 16, marginBottom: 5, textAlign: 'center' }}>Patient ID: {patientId}</Text>
+                        <TextInput
+                            label="Patient ID"
+                            mode="outlined"
+                            style={{ width: '50%', marginBottom: 10, alignSelf: 'center' }}
+                            placeholder="Enter patient ID here"
+                            onChangeText={setPatientId}
+                            value={patientId}
+                        />
                         <TextInput
                             label="Patient Info"
                             mode="outlined"
                             multiline
-                            style={{ height: windowHeight * 0.12, width: '100%', marginBottom: 10 }}
+                            style={{ height: windowHeight * 0.1, width: '100%', marginBottom: 10 }}
                             placeholder="Enter patient info here"
                             onChangeText={setPatientInfo}
                             value={patientInfo}
@@ -164,11 +207,11 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
                                     />
                                 )}
                             </View>
-                            <View style = {{flex: 0.05}}>
-                                {isTranscriptLoading && <ActivityIndicator size="small" style={{paddingRight: 10}} />}
+                            <View style={{ flex: 0.05 }}>
+                                {isTranscriptLoading && <ActivityIndicator size="small" style={{ paddingRight: 10 }} />}
                             </View>
                             <View style={{ flex: 0.2 }}>
-                                <Text style={{ fontSize: 16, }}>{msToTime(counter)}</Text>
+                                <Text style={{ fontSize: 14, }}>{msToTime(counter)}</Text>
                             </View>
                             <View style={{ flex: 0.4 }}>
                                 <SelectDropdown
@@ -196,7 +239,7 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
                                     dropdownStyle={{ marginTop: -30 }}
                                     rowStyle={{ borderColor: '#c4c4c4', borderWidth: 1 }}
                                     rowTextStyle={{ color: '#757575', textAlign: 'center', paddingLeft: 0 }}
-                                    defaultButtonText="select a prompt"
+                                    defaultButtonText={selectedPrompt || "select a prompt"}
                                 />
                             </View>
                         </View>
@@ -210,7 +253,7 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
                             placeholder="Start recording to get ASR result"
                             scrollEnabled
                         />
-                        <Button mode="contained" onPress={sendToGPT} loading={isLoading}>Send to GPT</Button>
+                        <Button mode="contained" onPress={sendToGPT} loading={isLoadingGpt}>Send to GPT</Button>
                         <TextInput
                             label="GPT result"
                             mode="outlined"

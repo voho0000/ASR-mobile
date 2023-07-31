@@ -7,8 +7,7 @@ import { RootStackParamList } from '../navigation/AppNavigator';
 import Toast from 'react-native-toast-message';
 import { TextInput, Button, HelperText, Snackbar, Text } from 'react-native-paper';
 import { initializePreferences, createUserInfo } from '../services/FirestoreService';
-import DateTimePicker from '@react-native-community/datetimepicker';
-import DropDownPicker from 'react-native-dropdown-picker';
+import SelectDropdown from "react-native-select-dropdown";
 
 type SignupScreenNavigationProp = NativeStackNavigationProp<
     RootStackParamList,
@@ -26,18 +25,32 @@ const SignupScreen = ({ navigation }: { navigation: SignupScreenNavigationProp }
     const [errorMessage, setErrorMessage] = useState('');
     const [visible, setVisible] = useState(false);
     const [sex, setSex] = useState<SexType>(null);
-    const [birthday, setBirthday] = useState(new Date());
+    const [birthday, setBirthday] = useState<string>('');
     const [position, setPosition] = useState<PositionType>(null);
     const [openSex, setOpenSex] = useState(false);
     const [openPosition, setOpenPosition] = useState(false);
 
-    const today = new Date();
-    const isBirthdayToday = birthday.toISOString().slice(0, 10) === today.toISOString().slice(0, 10);
+    // Create constants for dropdown data
+    const sexData = [
+        { label: 'Male', value: 'Male' },
+        { label: 'Female', value: 'Female' }
+    ];
 
-    const handleConfirm = (event: any, selectedDate?: Date) => {
-        const currentDate = selectedDate || birthday;
-        setBirthday(currentDate);
+    const positionData = [
+        { label: 'Medical Student', value: 'Medical Student' },
+        { label: 'Intern', value: 'Intern' },
+        { label: 'PGY', value: 'PGY' },
+        { label: 'Resident', value: 'Resident' },
+        { label: 'Fellow', value: 'Fellow' },
+        { label: 'Attending', value: 'Attending' },
+        { label: 'Other', value: 'Other' }
+    ];
+
+    // const isBirthdayToday = birthday.toISOString().slice(0, 10) === today.toISOString().slice(0, 10);
+    const handleDateChange = (input: string) => {
+        setBirthday(input);
     };
+
 
     const signupHandler = async () => {
         if (password !== confirmPassword) {
@@ -47,7 +60,7 @@ const SignupScreen = ({ navigation }: { navigation: SignupScreenNavigationProp }
         }
         try {
             const user = await createUser(email, password);
-            if (user && sex && position) {
+            if (user && sex && position && birthday) {
                 try {
                     await initializePreferences();  // Initialize the preferences document for this user
                     await createUserInfo(user.uid, email, sex, birthday, position);
@@ -102,60 +115,83 @@ const SignupScreen = ({ navigation }: { navigation: SignupScreenNavigationProp }
                     />
                     <Text >Sex</Text>
 
-                    <DropDownPicker
-                        open={openSex}
-                        value={sex}
-                        items={[
-                            { label: 'Male', value: 'Male' },
-                            { label: 'Female', value: 'Female' },
-                        ]}
-                        setOpen={setOpenSex}
-                        setValue={setSex}
-                        setItems={() => { }}
-                        placeholder="Select sex"
-                        style={styles.dropDownPicker}
-                    />
+                    <SelectDropdown
+                        data={sexData}
+                        onSelect={(selectedItem, index) => {
+                            setSex(selectedItem.value);
+                        }}
+                        buttonTextAfterSelection={(selectedItem, index) => {
+                            return selectedItem.label;
+                        }}
+                        rowTextForSelection={(item, index) => {
+                            return item.label;
+                        }}
+                        buttonStyle={{
+                            width: '100%',
+                            height: 50,
+                            borderColor: '#c4c4c4',
+                            borderWidth: 1,
+                            borderRadius: 5,
+                            justifyContent: 'flex-start',
+                            paddingHorizontal: 10,
+                            backgroundColor: '#fff',
+                            marginTop: 10,
+                            marginBottom: 10,
+                        }}
+                        buttonTextStyle={{ textAlign: 'center', color: '#000000' }}
+                        dropdownStyle={{ marginTop: -30, borderColor: '#c4c4c4', borderWidth: 1, borderRadius: 5, backgroundColor: '#fff' }}
+                        defaultButtonText={sex || "Select sex"} />
                     <View style={styles.datePickerContainer}>
                         <Text >Birthday</Text>
-                        <DateTimePicker
-                            testID="dateTimePicker"
-                            value={birthday || new Date()}
-                            mode={"date"}
-                            display="compact"
-                            onChange={handleConfirm}
-                            style={styles.datePicker}
+                        <TextInput
+                            mode="outlined"
+                            label="format : 20230731"
+                            placeholder='format : 20230731'
+                            value={birthday}
+                            onChangeText={handleDateChange}
+                            style={styles.inputField}
+                            keyboardType="numeric"
                         />
                     </View>
                     <Text >Position</Text>
 
-                    <DropDownPicker
-                        open={openPosition}
-                        value={position}
-                        items={[
-                            { label: 'Medical Student', value: 'Medical Student' },
-                            { label: 'Intern', value: 'Intern' },
-                            { label: 'PGY', value: 'PGY' },
-                            { label: 'Resident', value: 'Resident' },
-                            { label: 'Fellow', value: 'Fellow' },
-                            { label: 'Attending', value: 'Attending' },
-                            { label: 'Other', value: 'Other' },
-                        ]}
-                        setOpen={setOpenPosition}
-                        setValue={setPosition}
-                        setItems={() => { }}
-                        placeholder="Select position"
-                        style={styles.dropDownPicker}
+                    <SelectDropdown
+                        data={positionData}
+                        onSelect={(selectedItem, index) => {
+                            setPosition(selectedItem.value);
+                        }}
+                        buttonTextAfterSelection={(selectedItem, index) => {
+                            return selectedItem.label;
+                        }}
+                        rowTextForSelection={(item, index) => {
+                            return item.label;
+                        }}
+                        buttonStyle={{
+                            width: '100%',
+                            height: 50,
+                            borderColor: '#c4c4c4',
+                            borderWidth: 1,
+                            borderRadius: 5,
+                            justifyContent: 'flex-start',
+                            paddingHorizontal: 10,
+                            backgroundColor: '#fff',
+                            marginTop: 10,
+                            marginBottom: 10,
+                        }}
+                        buttonTextStyle={{ textAlign: 'center', color: '#000000' }}
+                        dropdownStyle={{ marginTop: -30, borderColor: '#c4c4c4', borderWidth: 1, borderRadius: 5, backgroundColor: '#fff' }}
+                        defaultButtonText={position || "Select position"}
                     />
                     <HelperText type="error" visible={password !== confirmPassword}>
                         Passwords do not match
                     </HelperText>
-                    <HelperText type="error" visible={isBirthdayToday}>
-                        You cannot select today as your birthday.
+                    <HelperText type="error" visible={birthday.length != 8}>
+                        Birthday must be eight digits.
                     </HelperText>
                     <HelperText type="error" visible={password.length < 6}>
                         Password must be at least 6 characters.
                     </HelperText>
-                    <Button mode="contained" onPress={signupHandler} disabled={!email || password.length < 6|| !password || !confirmPassword || !sex || !position || isBirthdayToday}>Sign Up</Button>
+                    <Button mode="contained" onPress={signupHandler} disabled={!email || password.length < 6 || !password || !confirmPassword || !sex || !position || birthday.length != 8}>Sign Up</Button>
                     <Text
                         onPress={() => navigation.replace('LoginScreen')}
                         style={{ textDecorationLine: 'underline', fontSize: 14, textAlign: 'center', marginTop: 20 }}
@@ -196,7 +232,7 @@ const styles = StyleSheet.create({
         marginBottom: 10,
         marginTop: 5,
     },
-    datePicker: {  
+    datePicker: {
         flex: 1,
         alignSelf: 'center',
     },

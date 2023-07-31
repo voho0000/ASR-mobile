@@ -1,11 +1,11 @@
 // HomeScreen.tsx
 import React, { useEffect, useState } from 'react';
-import { View, FlatList, TouchableOpacity, Text, StyleSheet, Alert, Platform } from 'react-native';
+import { View, FlatList, StyleSheet, Platform } from 'react-native';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { fetchPatientRecords, addPatientRecord, deletePatientRecord } from '../services/FirestoreService';
-import { Button, List, Dialog, Portal, Paragraph, TextInput, HelperText, IconButton, Divider } from 'react-native-paper';  // Imported from react-native-paper
+import { Button, List, Dialog, Portal, Paragraph, TextInput, HelperText, IconButton, Divider, ActivityIndicator } from 'react-native-paper';  // Imported from react-native-paper
 import { TouchableWithoutFeedback, Keyboard } from 'react-native';
 import { SafeAreaView } from 'react-native';
 
@@ -17,7 +17,8 @@ type HomeScreenNavigationProp = NativeStackNavigationProp<
 >;
 
 const HomeScreen = () => {
-    const [items, setItems] = useState<{id: string, info: string}[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [items, setItems] = useState<{ id: string, info: string }[]>([]);
     const navigation = useNavigation<HomeScreenNavigationProp>();
     const isFocused = useIsFocused();
     const [visible, setVisible] = useState(false); // State for Dialog visibility
@@ -36,19 +37,26 @@ const HomeScreen = () => {
 
 
     useEffect(() => {
-        if (isFocused) {
-            fetchPatientRecords().then(response => {
+        const fetchData = async () => {
+            try { 
+                const response = await fetchPatientRecords();
                 if (response) {
                     setItems(response); // Assuming response is an array of items
                 }
-            }).catch(error => {
+            } catch (error) { 
                 console.log('Error fetching patient records:', error);
-            });
+            } finally { 
+                setIsLoading(false); // Finish loading
+            }
+        }
+        ;
+        if (isFocused) {
+            fetchData();
         }
     }, [isFocused]);
 
     const handleAddPatient = () => {
-        const newItems = [...items, {id: inputValue, info: ''}];
+        const newItems = [...items, { id: inputValue, info: '' }];
         setItems(newItems);
         addPatientRecord(inputValue);
         hideAddDialog();
@@ -73,9 +81,17 @@ const HomeScreen = () => {
         }
     };
 
+    if (isLoading) {
+        return (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                <ActivityIndicator animating={true} size="large" />
+            </View>
+        );
+    }
+
     return (
         <SafeAreaView style={{ flex: 1, marginTop: Platform.OS === 'android' ? 24 : 0 }}>
-            <View style={{ flex: 1, padding: 10, backgroundColor: '#fff' }}>
+            <View style={{ flex: 1, paddingLeft: 10, backgroundColor: '#fff' }}>
                 <Portal>
                     <Dialog visible={addDialogVisible} onDismiss={hideAddDialog}>
                         <Dialog.Title>Add a Patient</Dialog.Title>
@@ -112,7 +128,7 @@ const HomeScreen = () => {
                             description={item.info}
                             descriptionNumberOfLines={2} // limit the number of lines for description
                             descriptionStyle={{ fontSize: 12, overflow: 'hidden' }} // hide overflowing text
-                            style={{paddingVertical: 0 }} // enforce a consistent height and remove vertical padding
+                            style={{ paddingVertical: 0 }} // enforce a consistent height and remove vertical padding
                             onPress={() => handlePressItem(item.id)}
                             right={props =>
                                 <IconButton

@@ -1,7 +1,7 @@
 // FirestoreService.ts
-import { db } from '../../firebaseConfig';
+import { db } from '../firebaseConfig';
 import { collection, getDocs, doc, setDoc, updateDoc, deleteDoc, getDoc } from 'firebase/firestore';
-import { auth } from '../../firebaseConfig';
+import { auth } from '../firebaseConfig';
 import Toast from 'react-native-toast-message';
 import { FirebaseError } from 'firebase/app';
 
@@ -96,7 +96,8 @@ export const addPatientRecord = async (patientId: string): Promise<void> => {
 
 
 export const uploadDataToFirestore = async (
-  patientId: string,
+  oldPatientId: string,
+  newPatientId: string,
   patientInfo: string,
   asrResponse: string,
   gptResponse: string
@@ -108,7 +109,13 @@ export const uploadDataToFirestore = async (
       throw new Error('User not authenticated, please log in again');
     }
 
-    await updateDoc(doc(db, 'PatientRecords', userId, 'PatientRecord', patientId), {
+    if (oldPatientId !== newPatientId) {
+      // delete old record
+      await deleteDoc(doc(db, 'PatientRecords', userId, 'PatientRecord', oldPatientId));
+    }
+
+    // add or update new record
+    await setDoc(doc(db, 'PatientRecords', userId, 'PatientRecord', newPatientId), {
       patientInfo,
       asrResponse,
       gptResponse,
@@ -168,8 +175,9 @@ export const initializePreferences = async (): Promise<void> => {
     }
 
     await setDoc(doc(db, 'Preferences', userId), {
-      commonWords: ``,
-      gptPrompt: `The following is the summary of the present illness. As you are a doctor helper, please transform the following text to the professional medical note. Text: `
+      commonWords: "",
+      gptModel: "gpt-3.5-turbo",
+      defaultPrompt: ""
     });
   } catch (error) {
     handleFirestoreError(error as FirebaseError);
@@ -177,7 +185,7 @@ export const initializePreferences = async (): Promise<void> => {
   }
 };
 
-export const updateCommonWords = async (commonWords: string): Promise<void> => {
+export const updatePreference = async (commonWords: string, gptModel:string, defaultPrompt:string): Promise<void> => {
   try {
     const userId = auth.currentUser?.uid;
 
@@ -187,6 +195,8 @@ export const updateCommonWords = async (commonWords: string): Promise<void> => {
 
     await updateDoc(doc(db, 'Preferences', userId), {
       commonWords,
+      gptModel,
+      defaultPrompt
     });
   } catch (error) {
     handleFirestoreError(error as FirebaseError);
@@ -194,22 +204,22 @@ export const updateCommonWords = async (commonWords: string): Promise<void> => {
   }
 };
 
-export const updateGptPrompt = async (gptPrompt: string): Promise<void> => {
-  try {
-    const userId = auth.currentUser?.uid;
+// export const updateGptPrompt = async (gptPrompt: string): Promise<void> => {
+//   try {
+//     const userId = auth.currentUser?.uid;
 
-    if (!userId) {
-      throw new Error('User not authenticated, please log in again');
-    }
+//     if (!userId) {
+//       throw new Error('User not authenticated, please log in again');
+//     }
 
-    await updateDoc(doc(db, 'Preferences', userId), {
-      gptPrompt,
-    });
-  } catch (error) {
-    handleFirestoreError(error as FirebaseError);
-    throw error; // re-throw the error after handling it
-  }
-};
+//     await updateDoc(doc(db, 'Preferences', userId), {
+//       gptPrompt,
+//     });
+//   } catch (error) {
+//     handleFirestoreError(error as FirebaseError);
+//     throw error; // re-throw the error after handling it
+//   }
+// };
 
 export const fetchPreferences = async () => {
   try {
@@ -236,7 +246,7 @@ export const createUserInfo = async (
   userId: string,
   email: string,
   sex: string,
-  birthday: Date,
+  birthday: string,
   position: string
 ): Promise<void> => {
   try {
@@ -277,7 +287,7 @@ export const fetchUserInfo = async (): Promise<any> => {
 };
 
 
-export const updateUserInfo = async (sex: string, birthday: Date, position: string): Promise<void> => {
+export const updateUserInfo = async (sex: string, birthday: string, position: string): Promise<void> => {
   try {
     const userId = auth.currentUser?.uid;
 
@@ -298,7 +308,7 @@ export const updateUserInfo = async (sex: string, birthday: Date, position: stri
 
 export const fetchPrompts = async (): Promise<any[]> => {
   try {
-    const userId = auth.currentUser?.uid;
+    const userId =auth.currentUser ?.uid;
     if (!userId) {
       throw new Error('User not authenticated, please log in again');
     }
