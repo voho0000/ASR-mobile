@@ -11,7 +11,7 @@ npm-debug.*
 web-build/
 .env
 ios/Pods/
-firebaseConfig.ts
+src/firebaseConfig.ts
 
 # macOS
 .DS_Store

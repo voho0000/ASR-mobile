@@ -1,4 +1,4 @@
-import { auth } from '../../firebaseConfig'; // Import your Firebase auth instance
+import { auth } from '../firebaseConfig'; // Import your Firebase auth instance
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendEmailVerification, sendPasswordResetEmail } from 'firebase/auth';
 import { FirebaseError } from 'firebase/app';
 import Toast from 'react-native-toast-message';

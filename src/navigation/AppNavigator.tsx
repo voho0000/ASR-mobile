@@ -11,7 +11,7 @@ import ProfileScreen from '../screens/ProfileScreen';
 import PreferenceScreen from '../screens/PreferenceScreen';
 import PromptListScreen from '../screens/PromptListScreen';
 import PromptDetailScreen from '../screens/PromptDetailScreen';
-import { auth } from '../../firebaseConfig'; // Import your Firebase auth instance
+import { auth } from '../firebaseConfig';
 import { onAuthStateChanged } from 'firebase/auth';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';

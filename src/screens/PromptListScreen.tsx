@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, FlatList } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Button, List, Dialog, Portal, Paragraph, Divider, IconButton } from 'react-native-paper';
+import { Button, List, Dialog, Portal, Paragraph, Divider, IconButton, ActivityIndicator } from 'react-native-paper';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
 import { fetchPrompts, deletePrompt } from '../services/FirestoreService';
@@ -14,9 +14,10 @@ type PromptListScreenNavigationProp = NativeStackNavigationProp<
 interface Prompt {
     name: string;
     promptContent: string;
-  }
+}
 
 const PromptListScreen = () => {
+    const [isLoading, setIsLoading] = useState(true);
     const [prompts, setPrompts] = useState<Prompt[]>([]);
     const [selectedIndex, setSelectedIndex] = useState<number | null>(null); // new state for the selected index
     const [visible, setVisible] = useState(false);
@@ -29,10 +30,17 @@ const PromptListScreen = () => {
 
     useEffect(() => {
         const fetchAllPrompts = async () => {
-            const promptData = await fetchPrompts();
-            setPrompts(promptData);
-        };
+            try {
+                const promptData = await fetchPrompts();
+                setIsLoading(false);
+                setPrompts(promptData);
 
+            } catch (error) {
+                console.error("Failed to fetch data from Firestore:", error);
+            } finally {
+                setIsLoading(false); // Finish loading
+            }
+        };
         fetchAllPrompts();
         // console.log(prompts)
     }, [isFocused]);
@@ -42,7 +50,7 @@ const PromptListScreen = () => {
     };
 
     const handlePressItem = (itemName: string) => {
-        navigation.navigate('PromptDetailScreen', { name: itemName, isNew: false  });
+        navigation.navigate('PromptDetailScreen', { name: itemName, isNew: false });
     };
 
     const handleDelete = async () => {
@@ -60,6 +68,14 @@ const PromptListScreen = () => {
         }
     };
 
+    if (isLoading) {
+        return (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                <ActivityIndicator animating={true} size="large" />
+            </View>
+        );
+    }
+
     return (
         <View style={styles.container}>
             <FlatList
@@ -71,7 +87,7 @@ const PromptListScreen = () => {
                         description={item.promptContent}
                         descriptionNumberOfLines={2} // limit the number of lines for description
                         descriptionStyle={{ fontSize: 12, overflow: 'hidden' }} // hide overflowing text
-                        style={{paddingVertical: 0 }} // enforce a consistent height and remove vertical padding
+                        style={{ paddingVertical: 0 }} // enforce a consistent height and remove vertical padding
                         onPress={() => handlePressItem(item.name)}
                         right={() =>
                             <IconButton
