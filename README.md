@@ -39,7 +39,7 @@ npm run ios
 4. You can send the transcribed text to GPT-4 by pressing the "Send to GPT" button.
 5. The response from GPT-4 will be displayed on the screen.
 
-## Environment Variables
+## Environment Variables (deprecated)
 
 Create a `.env` file in the root directory and add the following variables:
 
