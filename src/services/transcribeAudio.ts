@@ -3,7 +3,7 @@
 import { Platform } from 'react-native';
 import { fetchPreferences } from './FirestoreService';
 
-export const transcribeAudio = async (audioUri: string) => {
+export const transcribeAudio = async (audioUri: string, patientId:string, userId:string) => {
     const data = new FormData();
     try {
         const preferences = await fetchPreferences();
@@ -23,6 +23,8 @@ export const transcribeAudio = async (audioUri: string) => {
         const file = { uri: audioUri, name: 'recording.m4a', type: 'audio/m4a' };
         data.append('file', file as unknown as Blob);
     }
+    data.append('patientId', patientId)
+    data.append('userId', userId)
 
     try {
         console.log("send to firebase!")

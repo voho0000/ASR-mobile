@@ -77,7 +77,7 @@ export const useRecording = () => {
       });    }
   };
 
-  const stopRecording = async () => {
+  const stopRecording = async (patientId:string, userId:string) => {
     try {
       await recording?.stopAndUnloadAsync();
       const audioUri = recording?.getURI() || null;
@@ -87,7 +87,7 @@ export const useRecording = () => {
       setCounter(0);
       if (audioUri) {
         try {
-          const transcript = await transcribeAudio(audioUri);
+          const transcript = await transcribeAudio(audioUri, patientId, userId);
           Toast.show({
             type: 'success',
             position: 'top',
