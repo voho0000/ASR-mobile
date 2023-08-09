@@ -61,6 +61,7 @@ const HomeScreen = () => {
         addPatientRecord(inputValue);
         hideAddDialog();
         setInputValue(''); // reset input value after adding
+        // navigation.navigate('RecordingScreen', { name: inputValue });
     };
 
     const handlePressItem = (itemId: string) => {

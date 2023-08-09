@@ -13,6 +13,7 @@ import { TextInput, Button, ActivityIndicator, TouchableRipple, Text, Paragraph,
 import { SafeAreaView } from 'react-native';
 import SelectDropdown from "react-native-select-dropdown";
 import Toast from 'react-native-toast-message';
+import { auth } from '../firebaseConfig';
 
 type RecordingScreenRouteProp = RouteProp<RootStackParamList, 'RecordingScreen'>;
 
@@ -39,6 +40,8 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
 
     const formattedPrompts = prompts.map(prompt => prompt.name); // For SelectDropdown we only need the names
     const oldPatientId = route.params.name;
+    const userId = auth.currentUser?.uid;
+
     useEffect(() => {
         const fetchUserPreferences = async () => {
             try {
@@ -87,18 +90,20 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
         }
         const preferences = await fetchPreferences()
         try {
-            const response = await callGPTAPI(asrResponse, promptContent, preferences.gptModel);
-            if (response) {
-                setGptResponse(response);
-                Toast.show({
-                    type: 'success',
-                    position: 'top',
-                    text1: 'Success',
-                    text2: 'Successfully get response from GPT.',
-                    visibilityTime: 2000,
-                    autoHide: true,
-                    bottomOffset: 40,
-                  });
+            if (userId){
+                const response = await callGPTAPI(asrResponse, promptContent, preferences.gptModel, patientId||oldPatientId, userId);
+                if (response) {
+                    setGptResponse(response);
+                    Toast.show({
+                        type: 'success',
+                        position: 'top',
+                        text1: 'Success',
+                        text2: 'Successfully get response from GPT.',
+                        visibilityTime: 2000,
+                        autoHide: true,
+                        bottomOffset: 40,
+                      });
+                }
             }
         } catch (error) {
             console.error("Failed to get response from GPT:", error);
@@ -148,9 +153,11 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
 
     const handleStopRecording = async () => {
         setIsTranscriptLoading(true);
-        const transcript = await stopRecording();
-        setAsrResponse(prevAsrResponse => `${prevAsrResponse} ${transcript}`);
-        setIsTranscriptLoading(false);
+        if (userId) {
+            const transcript = await stopRecording(patientId || oldPatientId, userId);
+            setAsrResponse(prevAsrResponse => `${prevAsrResponse} ${transcript}`);
+            setIsTranscriptLoading(false);
+        } 
     };
 
     if (isLoading) {

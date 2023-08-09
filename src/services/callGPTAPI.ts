@@ -6,7 +6,7 @@ import { httpsCallable } from "firebase/functions";
 interface CallableResponse {
     message: string;
   }
-export const callGPTAPI = async (inputText: string, promptContent:string, gptModel:string) => {
+export const callGPTAPI = async (inputText: string, promptContent:string, gptModel:string, patientId:string, userId:string) => {
     try {
         const callGPTFunction = httpsCallable(functions, "callGPTAPI");
         const result = await callGPTFunction({ inputText, promptContent, gptModel});
