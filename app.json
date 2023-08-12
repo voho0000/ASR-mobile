@@ -3,6 +3,7 @@
     "name": "GPT Medical Note",
     "slug": "ASR",
     "version": "1.0.0",
+    "owner": "voho0000",
     "orientation": "portrait",
     "icon": "./assets/gpt-medical-note-icon.png",
     "userInterfaceStyle": "light",
