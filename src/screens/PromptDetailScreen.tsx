@@ -35,7 +35,7 @@ const PromptDetailScreen: React.FC<Props> = ({ route, navigation }) => {
                 setName(prompt.name);
                 setContent(prompt.promptContent);
             });
-        }else{
+        } else {
             setIsLoading(false);
         }
     }, [isNew, promptName]);
@@ -77,16 +77,17 @@ const PromptDetailScreen: React.FC<Props> = ({ route, navigation }) => {
 
     if (isLoading) {
         return (
-          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-            <ActivityIndicator animating={true} size="large" />
-          </View>
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                <ActivityIndicator animating={true} size="large" />
+            </View>
         );
-      }
+    }
 
     return (
         <KeyboardAwareScrollView>
-
-            <View style={{ flex: 1, justifyContent: 'center', padding: 20 }}>
+            <View style={{
+                flex: 1, justifyContent: 'center', padding: 20, width: '100%', maxWidth: 1000, alignSelf: 'center'
+            }}>
                 <TextInput
                     label="Prompt name"
                     value={name}
@@ -105,7 +106,7 @@ const PromptDetailScreen: React.FC<Props> = ({ route, navigation }) => {
                 <HelperText type="error" visible={isNameDuplicate}>
                     {errorText}
                 </HelperText>
-                <Button mode="contained" onPress={handleSave} disabled={isNameDuplicate || name.trim() === '' }>
+                <Button mode="contained" onPress={handleSave} disabled={isNameDuplicate || name.trim() === ''}>
                     Save
                 </Button>
             </View>

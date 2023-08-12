@@ -25,7 +25,6 @@ export const transcribeAudio = async (audioUri: string) => {
     }
 
     try {
-        console.log("send to firebase!")
         const response = await fetch('https://us-central1-gpt-medical-note.cloudfunctions.net/uploadFile', {
             method: 'POST',
             body: data,

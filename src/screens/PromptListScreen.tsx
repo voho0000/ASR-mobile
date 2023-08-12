@@ -123,6 +123,9 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'space-between',
         padding: 16,
+        width:'100%', 
+        maxWidth:1000, 
+        alignSelf:'center'
     },
 });
 

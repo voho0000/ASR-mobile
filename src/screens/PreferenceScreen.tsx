@@ -206,6 +206,9 @@ const styles = StyleSheet.create({
         flexGrow: 1,
         padding: 15,
         backgroundColor: '#fff',
+        width:'100%', 
+        maxWidth:1000, 
+        alignSelf:'center'
     },
     commonWordsInput: {
         marginBottom: 10,
