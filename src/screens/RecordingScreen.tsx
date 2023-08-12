@@ -9,7 +9,7 @@ import { RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view'
 import { uploadDataToFirestore, fetchSinglePatientRecord, fetchPrompts, fetchSinglePrompt, fetchPreferences } from '../services/FirestoreService';
-import { TextInput, Button, ActivityIndicator, TouchableRipple, Text, Paragraph, Dialog, Portal, HelperText } from 'react-native-paper';
+import {  TextInput, Button, ActivityIndicator, TouchableRipple, Text, Paragraph, Dialog, Portal, HelperText } from 'react-native-paper';
 import { SafeAreaView } from 'react-native';
 import SelectDropdown from "react-native-select-dropdown";
 import Toast from 'react-native-toast-message';
@@ -35,9 +35,10 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
     const [prompts, setPrompts] = useState<Prompt[]>([]);
     const [selectedPrompt, setSelectedPrompt] = useState<string>('');
     const [gptModel, setGptModel] = useState<string>("")
-
-    const [asrInputHeight, setAsrInputHeight] = useState<number>(40); 
-    const [gptInputHeight, setGptInputHeight] = useState<number>(40); 
+    const windowHeight = Dimensions.get('window').height;
+    const [infoInputHeight, setInfoInputHeight] = useState<number>(40);
+    const [asrInputHeight, setAsrInputHeight] = useState<number>(80);
+    const [gptInputHeight, setGptInputHeight] = useState<number>(80);
 
 
     const formattedPrompts = prompts.map(prompt => prompt.name); // For SelectDropdown we only need the names
@@ -146,7 +147,6 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
         }
     }, [patientInfo, asrResponse, gptResponse, patientId]); // Add isLoadingData to dependencies
 
-    const windowHeight = Dimensions.get('window').height;
 
     const handleStopRecording = async () => {
         setIsTranscriptLoading(true);
@@ -164,112 +164,139 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
     }
 
     return (
-        <SafeAreaView style={{ flex: 1,  marginTop: Platform.OS === 'android' ? 24 : 0 }}>
-                <KeyboardAwareScrollView>
-                    <View style={styles.scrollContainer}>
-                        <View style={{ width: '50%', marginBottom: 10, alignSelf: 'center', padding: 10, borderWidth: 1, borderColor: '#c4c4c4', borderRadius: 5 }}>
-                            <Text style={{ fontSize: 16 }}>{patientId}</Text>
-                        </View>
-                        <TextInput
-                            label="Patient Info"
-                            mode="outlined"
-                            multiline
-                            style={{ minHeight: windowHeight * 0.1,  maxWidth:1000, alignSelf:'center', width: '100%', marginBottom: 10 }}
-                            placeholder="Enter patient info here"
-                            onChangeText={setPatientInfo}
-                            value={patientInfo}
-                            scrollEnabled
-                        />
-                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', paddingRight: 20 }}>
-                            <View style={{
-                                justifyContent: 'space-between', flex: 0.25, flexDirection: 'row',
-                                paddingLeft: 20,
-                            }}>
-                                {isRecording ? (
-                                    <>
-                                        <IconButton
-                                            onPress={isPaused ? startRecording : pauseRecording}
-                                            iconName={isPaused ? "play" : "pause"}
-                                        />
-                                        <IconButton
-                                            onPress={handleStopRecording}
-                                            iconName="stop"
-                                        />
-                                    </>
-                                ) : (
-                                    <IconButton
-                                        onPress={startRecording}
-                                        iconName="microphone"
-                                    />
-                                )}
-                            </View>
-                            <View style={{ flex: 0.05 }}>
-                                {isTranscriptLoading && <ActivityIndicator size="small" style={{ paddingRight: 10 }} />}
-                            </View>
-                            <View style={{ flex: 0.2 }}>
-                                <Text style={{ fontSize: 14, }}>{msToTime(counter)}</Text>
-                            </View>
-                            <View style={{ flex: 0.4 }}>
-                                <SelectDropdown
-                                    data={formattedPrompts}
-                                    onSelect={(selectedItem, index) => {
-                                        setSelectedPrompt(selectedItem);
-                                    }}
-                                    buttonTextAfterSelection={(selectedItem, index) => {
-                                        // text representing selected item
-                                        return selectedItem;
-                                    }}
-                                    rowTextForSelection={(item, index) => {
-                                        // text for row
-                                        return item;
-                                    }}
-                                    buttonStyle={{
-                                        width: 160,
-                                        height: 50,
-                                        borderColor: '#c4c4c4',
-                                        borderWidth: 1,
-                                        borderRadius: 5,
-                                        justifyContent: 'center',
-                                    }}
-                                    buttonTextStyle={{ textAlign: 'center', color: '#757575' }}
-                                    dropdownStyle={{ marginTop: -30 }}
-                                    rowStyle={{ borderColor: '#c4c4c4', borderWidth: 1 }}
-                                    rowTextStyle={{ color: '#757575', textAlign: 'center', paddingLeft: 0 }}
-                                    defaultButtonText={selectedPrompt || "select a prompt"}
-                                />
-                            </View>
-                        </View>
-                        <TextInput
-                            label="ASR result"
-                            mode="outlined"
-                            multiline 
-                            onContentSizeChange={(e) => {
-                                setAsrInputHeight(e.nativeEvent.contentSize.height);
-                            }}
-                            style={{ height: asrInputHeight, minHeight: windowHeight * 0.2, maxWidth:1000, alignSelf:'center', width: '100%', marginTop: 10, marginBottom: 10  }}
-                            value={asrResponse}
-                            onChangeText={setAsrResponse}
-                            placeholder="Start recording to get ASR result"
-                            // scrollEnabled
-                        />
-                        <Button mode="contained" onPress={sendToGPT} loading={isLoadingGpt}>Send to GPT</Button>
-                        <TextInput
-                            label="GPT result"
-                            mode="outlined"
-                            multiline
-                            onContentSizeChange={(e) => {
-                                setGptInputHeight(e.nativeEvent.contentSize.height);
-                            }}
-                            style={{ height: gptInputHeight, minHeight: windowHeight * 0.2, maxWidth:1000, alignSelf:'center', width: '100%', marginTop: 10, marginBottom: 20 }}
-                            value={gptResponse}
-                            onChangeText={setGptResponse}
-                            placeholder="Medical note generated by GPT"
-                            // scrollEnabled={false}
-                            // scrollEnabled
-                        />
-                        <StatusBar style="auto" />
+        <SafeAreaView style={{ flex: 1, marginTop: Platform.OS === 'android' ? 24 : 0 }}>
+            <KeyboardAwareScrollView>
+                <View style={styles.scrollContainer}>
+                    <View style={{ width: '50%', marginBottom: 10, alignSelf: 'center', padding: 10, borderWidth: 1, borderColor: '#c4c4c4', borderRadius: 5 }}>
+                        <Text style={{ fontSize: 16 }}>{patientId}</Text>
                     </View>
-                </KeyboardAwareScrollView>
+                    <Text style={{ fontWeight: 'bold', fontSize:16 }}>Patient Info</Text>
+                    <TextInput
+                        // label="Patient Info"
+                        mode="outlined"
+                        multiline
+                        onContentSizeChange={(e) => {
+                            setInfoInputHeight(e.nativeEvent.contentSize.height);
+                        }}
+                        style={{ 
+                            height: infoInputHeight, 
+                            minHeight: patientInfo ? infoInputHeight : windowHeight * 0.1, 
+                            maxWidth: 1000, 
+                            alignSelf: 'center', 
+                            width: '100%', 
+                            marginBottom: 10 
+                        }}
+                        placeholder="Enter patient info here"
+                        onChangeText={setPatientInfo}
+                        value={patientInfo}
+                        scrollEnabled
+                    />
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', paddingRight: 20 }}>
+                        <View style={{
+                            justifyContent: 'space-between', flex: 0.25, flexDirection: 'row',
+                            paddingLeft: 20,
+                        }}>
+                            {isRecording ? (
+                                <>
+                                    <IconButton
+                                        onPress={isPaused ? startRecording : pauseRecording}
+                                        iconName={isPaused ? "play" : "pause"}
+                                    />
+                                    <IconButton
+                                        onPress={handleStopRecording}
+                                        iconName="stop"
+                                    />
+                                </>
+                            ) : (
+                                <IconButton
+                                    onPress={startRecording}
+                                    iconName="microphone"
+                                />
+                            )}
+                        </View>
+                        <View style={{ flex: 0.05 }}>
+                            {isTranscriptLoading && <ActivityIndicator size="small" style={{ paddingRight: 10 }} />}
+                        </View>
+                        <View style={{ flex: 0.2 }}>
+                            <Text style={{ fontSize: 14, }}>{msToTime(counter)}</Text>
+                        </View>
+                        <View style={{ flex: 0.4 }}>
+                            <SelectDropdown
+                                data={formattedPrompts}
+                                onSelect={(selectedItem, index) => {
+                                    setSelectedPrompt(selectedItem);
+                                }}
+                                buttonTextAfterSelection={(selectedItem, index) => {
+                                    // text representing selected item
+                                    return selectedItem;
+                                }}
+                                rowTextForSelection={(item, index) => {
+                                    // text for row
+                                    return item;
+                                }}
+                                buttonStyle={{
+                                    width: 160,
+                                    height: 50,
+                                    borderColor: '#c4c4c4',
+                                    borderWidth: 1,
+                                    borderRadius: 5,
+                                    justifyContent: 'center',
+                                }}
+                                buttonTextStyle={{ textAlign: 'center', color: '#757575' }}
+                                dropdownStyle={{ marginTop: -30 }}
+                                rowStyle={{ borderColor: '#c4c4c4', borderWidth: 1 }}
+                                rowTextStyle={{ color: '#757575', textAlign: 'center', paddingLeft: 0 }}
+                                defaultButtonText={selectedPrompt || "select a prompt"}
+                            />
+                        </View>
+                    </View>
+                    <Text style={{ fontWeight: 'bold', fontSize:16, marginTop: 10,  }}>ASR result</Text>
+                    <TextInput
+                        // label="ASR result"
+                        mode="outlined"
+                        multiline
+                        onContentSizeChange={(e) => {
+                            setAsrInputHeight(e.nativeEvent.contentSize.height);
+                        }}
+                        style={{ 
+                            height: asrInputHeight, 
+                            minHeight: asrResponse ? asrInputHeight : windowHeight * 0.2, 
+                            maxWidth: 1000, 
+                            alignSelf: 'center', 
+                            width: '100%', 
+                            marginBottom: 10 
+                        }}
+                        value={asrResponse}
+                        onChangeText={setAsrResponse}
+                        placeholder="Start recording to get ASR result"
+                    // scrollEnabled
+                    />
+                    <Button mode="contained" onPress={sendToGPT} loading={isLoadingGpt}>Send to GPT</Button>
+                    <Text style={{ fontWeight: 'bold', fontSize:16, marginTop: 10,  }}>GPT result</Text>
+                    <TextInput
+                        // label="GPT result"
+                        mode="outlined"
+                        multiline
+                        onContentSizeChange={(e) => {
+                            setGptInputHeight(e.nativeEvent.contentSize.height);
+                        }}
+                        style={{
+                            height: gptInputHeight, 
+                            minHeight: gptResponse ? gptInputHeight : windowHeight * 0.2, 
+                            maxWidth: 1000,
+                            alignSelf: 'center',
+                            width: '100%',
+                            marginBottom: 20
+                        }}
+                        value={gptResponse}
+                        onChangeText={setGptResponse}
+                        placeholder="Medical note generated by GPT"
+                    // scrollEnabled={false}
+                    // scrollEnabled
+                    />
+                    <StatusBar style="auto" />
+                </View>
+            </KeyboardAwareScrollView>
         </SafeAreaView>
     );
 };
@@ -279,10 +306,10 @@ const styles = StyleSheet.create({
         flex: 1,
         padding: 30,
         justifyContent: 'center',
-        maxWidth:1000, 
+        maxWidth: 1000,
         // alignItems: 'center', 
-        alignSelf:'center',
-        width:'100%'
+        alignSelf: 'center',
+        width: '100%'
         // alignContent: 'center',
     },
     container: {

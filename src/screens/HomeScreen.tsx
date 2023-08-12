@@ -34,11 +34,16 @@ const HomeScreen = () => {
     const hideAddDialog = () => setAddDialogVisible(false);
 
     const [isInputValid, setIsInputValid] = useState(true);
+    const [isNameUnique, setIsNameUnique] = useState(true);
+    const [isNameWithinLimit, setIsNameWithinLimit] = useState(true);
 
     const [editDialogVisible, setEditDialogVisible] = useState(false);
     const [editedValue, setEditedValue] = useState('');
     const [editIndex, setEditIndex] = useState<number | null>(null);
+
     const [isEditValid, setIsEditValid] = useState(true);
+    const [isEditNameUnique, setIsEditNameUnique] = useState(true);
+    const [isEditNameWithinLimit, setIsEditNameWithinLimit] = useState(true);
 
     const [isRenaming, setIsRenaming] = useState(false); // New state for renaming spinner
 
@@ -161,12 +166,19 @@ const HomeScreen = () => {
                                         value={inputValue}
                                         onChangeText={text => {
                                             setInputValue(text);
-                                            setIsInputValid(!items.map(item => item.id).includes(text)); // update validation state whenever the text changes
+                                            const isUnique = !items.map(item => item.id).includes(text);
+                                            const isWithinLimit = text.length <= 15;
+                                            setIsInputValid(isUnique && isWithinLimit); // combined validation state
+                                            setIsNameUnique(isUnique); // individual validation state for name uniqueness
+                                            setIsNameWithinLimit(isWithinLimit); // individual validation state for name length
                                         }}
                                         style={{ backgroundColor: 'white' }}
                                     />
-                                    <HelperText type="error" visible={!isInputValid}>
+                                    <HelperText type="error" visible={!isNameUnique}>
                                         Patient ID already exists. Please enter a unique ID.
+                                    </HelperText>
+                                    <HelperText type="error" visible={!isNameWithinLimit}>
+                                        Patient ID cannot exceed 15 characters.
                                     </HelperText>
                                 </View>
                             </TouchableWithoutFeedback>
@@ -235,43 +247,49 @@ const HomeScreen = () => {
                         </Dialog.Actions>
                     </Dialog>
                 </Portal>
-            <Portal>
-                <Dialog visible={editDialogVisible} onDismiss={() => setEditDialogVisible(false)} style={styles.dialogWrapper}>
-                    <Dialog.Title>Edit Patient</Dialog.Title>
-                    <Dialog.Content>
-                        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-                            <View>
-                                <TextInput
-                                    label="Patient ID"
-                                    value={editedValue}
-                                    onChangeText={text => {
-                                        setEditedValue(text);
-                                        const nameExists = items.some((item, idx) => item.id === text && idx !== editIndex);
-                                        setIsEditValid(!nameExists);
-                                    }}
-                                    style={{ backgroundColor: 'white' }}
-                                />
-                                <HelperText type="error" visible={!isEditValid}>
-                                    Patient ID already exists. Please enter a unique ID.
-                                </HelperText>
-                            </View>
-                        </TouchableWithoutFeedback>
-                    </Dialog.Content>
-                    <Dialog.Actions>
-                        {isRenaming && (
-                            <View style={{ marginLeft: 10 }}>
-                                <ActivityIndicator animating={true} size="small" />
-                            </View>
-                        )}
-                        <Button onPress={() => setEditDialogVisible(false)}>Cancel</Button>
-                        <Button onPress={handleEditPatient} disabled={!isEditValid || editedValue.trim() === '' || isRenaming}>Save</Button>
-                    </Dialog.Actions>
-                </Dialog>
-            </Portal>
+                <Portal>
+                    <Dialog visible={editDialogVisible} onDismiss={() => setEditDialogVisible(false)} style={styles.dialogWrapper}>
+                        <Dialog.Title>Edit Patient</Dialog.Title>
+                        <Dialog.Content>
+                            <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+                                <View>
+                                    <TextInput
+                                        label="Patient ID"
+                                        value={editedValue}
+                                        onChangeText={text => {
+                                            setEditedValue(text);
+                                            const isUnique = !items.map(item => item.id).includes(text);
+                                            const isWithinLimit = text.length <= 15;
+                                            setIsEditValid(isUnique && isWithinLimit); // combined validation state
+                                            setIsEditNameUnique(isUnique); // individual validation state for name uniqueness
+                                            setIsEditNameWithinLimit(isWithinLimit); // individual validation state for name length
+                                        }}
+                                        style={{ backgroundColor: 'white' }}
+                                    />
+                                    <HelperText type="error" visible={!isEditNameUnique}>
+                                        Patient ID already exists. Please enter a unique ID.
+                                    </HelperText>
+                                    <HelperText type="error" visible={!isEditNameWithinLimit}>
+                                        Patient ID cannot exceed 15 characters.
+                                    </HelperText>
+                                </View>
+                            </TouchableWithoutFeedback>
+                        </Dialog.Content>
+                        <Dialog.Actions>
+                            {isRenaming && (
+                                <View style={{ marginLeft: 10 }}>
+                                    <ActivityIndicator animating={true} size="small" />
+                                </View>
+                            )}
+                            <Button onPress={() => setEditDialogVisible(false)}>Cancel</Button>
+                            <Button onPress={handleEditPatient} disabled={!isEditValid || editedValue.trim() === '' || isRenaming}>Save</Button>
+                        </Dialog.Actions>
+                    </Dialog>
+                </Portal>
 
-            <Button mode="contained" onPress={showAddDialog}>Add a Patient</Button>
+                <Button mode="contained" onPress={showAddDialog}>Add a Patient</Button>
 
-        </View>
+            </View>
         </SafeAreaView >
 
     );
