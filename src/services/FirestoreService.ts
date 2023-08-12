@@ -397,6 +397,9 @@ export const renamePatientId = async (
   newPatientId: string
 ) => {
   try {
+    if (oldPatientId === newPatientId) {
+      return;
+    }
     const userId = auth.currentUser?.uid;
 
     if (!userId) {
