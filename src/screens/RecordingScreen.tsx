@@ -179,8 +179,8 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
                             setInfoInputHeight(e.nativeEvent.contentSize.height);
                         }}
                         style={{ 
-                            height: infoInputHeight, 
-                            minHeight: patientInfo ? infoInputHeight : windowHeight * 0.1, 
+                            height: infoInputHeight+40, // +40 need to be removed for web version
+                            minHeight: windowHeight * 0.1, 
                             maxWidth: 1000, 
                             alignSelf: 'center', 
                             width: '100%', 
@@ -259,8 +259,8 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
                             setAsrInputHeight(e.nativeEvent.contentSize.height);
                         }}
                         style={{ 
-                            height: asrInputHeight, 
-                            minHeight: asrResponse ? asrInputHeight : windowHeight * 0.2, 
+                            height: asrInputHeight+40, // +40 need to be removed for web version
+                            minHeight: windowHeight * 0.2, 
                             maxWidth: 1000, 
                             alignSelf: 'center', 
                             width: '100%', 
@@ -281,8 +281,8 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
                             setGptInputHeight(e.nativeEvent.contentSize.height);
                         }}
                         style={{
-                            height: gptInputHeight, 
-                            minHeight: gptResponse ? gptInputHeight : windowHeight * 0.2, 
+                            height: gptInputHeight+40, // +40 need to be removed for web version
+                            minHeight: windowHeight * 0.2, 
                             maxWidth: 1000,
                             alignSelf: 'center',
                             width: '100%',
