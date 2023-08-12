@@ -95,8 +95,8 @@ const PreferenceScreen = ({ navigation }: { navigation: PreferenceNavigationProp
       }
 
     return (
-        <TouchableRipple onPress={Keyboard.dismiss} style={{ flex: 1 }}>
-            <KeyboardAwareScrollView contentContainerStyle={styles.container}>
+        // <TouchableRipple onPress={Keyboard.dismiss} style={{ flex: 1 }}>
+            <KeyboardAwareScrollView contentContainerStyle={styles.container} scrollEnabled>
                 <List.Section style={styles.commonWordContainer}>
                     <Text style={{ fontWeight: 'bold' }}>Speech Recognition</Text>
                     <Paragraph style={styles.helperText}>
@@ -191,13 +191,13 @@ const PreferenceScreen = ({ navigation }: { navigation: PreferenceNavigationProp
                     onPress={savePreferences}
                     // contentStyle={{ height: 50 }}  // adjust this based on your requirement
                     labelStyle={{ color: 'white' }}
-                    style={{ position: 'absolute',  bottom:40, alignSelf: 'center', width: '100%'
+                    style={{ marginTop: 20, marginBottom: 20, alignSelf: 'center', width: '100%'
                 }}
                 >
                     Save Preferences
                 </Button>
             </KeyboardAwareScrollView>
-        </TouchableRipple>
+        // </TouchableRipple>
     );
 };
 
