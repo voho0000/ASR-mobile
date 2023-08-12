@@ -9,6 +9,8 @@ import { TextInput, Button, HelperText, Snackbar, Text } from 'react-native-pape
 import { initializePreferences, createUserInfo } from '../services/FirestoreService';
 import SelectDropdown from "react-native-select-dropdown";
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view'
+import { functions } from "../firebaseConfig";
+import { httpsCallable } from "firebase/functions";
 
 type SignupScreenNavigationProp = NativeStackNavigationProp<
     RootStackParamList,
@@ -67,6 +69,10 @@ const SignupScreen = ({ navigation }: { navigation: SignupScreenNavigationProp }
                 try {
                     await initializePreferences();  // Initialize the preferences document for this user
                     await createUserInfo(user.uid, email.trim(), sex, birthday, position);
+                    // Here, we call the cloud function to add default prompts
+                    const addDefaultPrompts = httpsCallable(functions, 'addDefaultPrompts');
+                    await addDefaultPrompts({ userId: user.uid });
+                    
                     Toast.show({
                         type: 'success',
                         position: 'top',
@@ -92,7 +98,7 @@ const SignupScreen = ({ navigation }: { navigation: SignupScreenNavigationProp }
 
     return (
         <KeyboardAwareScrollView>
-        {/* <TouchableWithoutFeedback onPress={Keyboard.dismiss}> */}
+            {/* <TouchableWithoutFeedback onPress={Keyboard.dismiss}> */}
             <View style={styles.container} >
                 <View style={styles.inputContainer}>
                     <TextInput
@@ -211,7 +217,7 @@ const SignupScreen = ({ navigation }: { navigation: SignupScreenNavigationProp }
                     {errorMessage}
                 </Snackbar>
             </View>
-        {/* </TouchableWithoutFeedback> */}
+            {/* </TouchableWithoutFeedback> */}
         </KeyboardAwareScrollView>
     );
 };
@@ -222,9 +228,9 @@ const styles = StyleSheet.create({
         padding: 20,
         alignItems: 'center',
         justifyContent: 'center',
-        width:'100%', 
-        maxWidth:1000, 
-        alignSelf:'center'
+        width: '100%',
+        maxWidth: 1000,
+        alignSelf: 'center'
     },
     inputContainer: {
         width: '95%',

@@ -63,14 +63,19 @@ const PromptDetailScreen: React.FC<Props> = ({ route, navigation }) => {
 
     const handleSetName = async (text: string) => {
         setName(text);
-        if (await checkPromptExists(text)) {
-            setIsNameDuplicate(true);
-            setErrorText('This prompt name already exists. Please choose a different name.');
+        if (text.length <= 20) {
+            if (await checkPromptExists(text)) {
+                setIsNameDuplicate(true);
+                setErrorText('This prompt name already exists. Please choose a different name.');
+            } else {
+                setIsNameDuplicate(false);
+                setErrorText('');
+            }
         } else {
-            setIsNameDuplicate(false);
-            setErrorText('');
+            setErrorText('Prompt name cannot exceed 20 characters.');
         }
     };
+    
 
 
     const windowHeight = Dimensions.get('window').height;
@@ -91,7 +96,7 @@ const PromptDetailScreen: React.FC<Props> = ({ route, navigation }) => {
                 <TextInput
                     label="Prompt name"
                     value={name}
-                    onChangeText={setName}
+                    onChangeText={handleSetName}
                     mode="outlined"
                     style={{ marginBottom: 10 }}
                 />
@@ -103,10 +108,10 @@ const PromptDetailScreen: React.FC<Props> = ({ route, navigation }) => {
                     mode="outlined"
                     style={{ height: windowHeight * 0.4, width: '100%', marginBottom: 10 }}
                 />
-                <HelperText type="error" visible={isNameDuplicate}>
+                <HelperText type="error" visible={isNameDuplicate|| name.length > 20}>
                     {errorText}
                 </HelperText>
-                <Button mode="contained" onPress={handleSave} disabled={isNameDuplicate || name.trim() === ''}>
+                <Button mode="contained" onPress={handleSave} disabled={isNameDuplicate || name.trim() === '' || name.length > 20}>
                     Save
                 </Button>
             </View>
