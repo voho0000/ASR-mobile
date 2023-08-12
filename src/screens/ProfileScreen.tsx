@@ -180,6 +180,9 @@ const styles = StyleSheet.create({
         flex: 1,
         padding: 20,
         justifyContent: 'space-between',
+        width:'100%', 
+        maxWidth:1000, 
+        alignSelf:'center'
     },
     label: {
         marginBottom: 10,

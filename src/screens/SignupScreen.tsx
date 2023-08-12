@@ -8,6 +8,7 @@ import Toast from 'react-native-toast-message';
 import { TextInput, Button, HelperText, Snackbar, Text } from 'react-native-paper';
 import { initializePreferences, createUserInfo } from '../services/FirestoreService';
 import SelectDropdown from "react-native-select-dropdown";
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view'
 
 type SignupScreenNavigationProp = NativeStackNavigationProp<
     RootStackParamList,
@@ -29,6 +30,7 @@ const SignupScreen = ({ navigation }: { navigation: SignupScreenNavigationProp }
     const [position, setPosition] = useState<PositionType>(null);
     const [openSex, setOpenSex] = useState(false);
     const [openPosition, setOpenPosition] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
 
     // Create constants for dropdown data
     const sexData = [
@@ -59,11 +61,12 @@ const SignupScreen = ({ navigation }: { navigation: SignupScreenNavigationProp }
             return;
         }
         try {
-            const user = await createUser(email, password);
+            setIsLoading(true);
+            const user = await createUser(email.trim(), password);
             if (user && sex && position && birthday) {
                 try {
                     await initializePreferences();  // Initialize the preferences document for this user
-                    await createUserInfo(user.uid, email, sex, birthday, position);
+                    await createUserInfo(user.uid, email.trim(), sex, birthday, position);
                     Toast.show({
                         type: 'success',
                         position: 'top',
@@ -83,11 +86,13 @@ const SignupScreen = ({ navigation }: { navigation: SignupScreenNavigationProp }
             setErrorMessage('Signup failed: ' + error.message);
             setVisible(true);
         }
+        setIsLoading(false);
     };
 
 
     return (
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <KeyboardAwareScrollView>
+        {/* <TouchableWithoutFeedback onPress={Keyboard.dismiss}> */}
             <View style={styles.container} >
                 <View style={styles.inputContainer}>
                     <TextInput
@@ -191,7 +196,7 @@ const SignupScreen = ({ navigation }: { navigation: SignupScreenNavigationProp }
                     <HelperText type="error" visible={password.length < 6}>
                         Password must be at least 6 characters.
                     </HelperText>
-                    <Button mode="contained" onPress={signupHandler} disabled={!email || password.length < 6 || !password || !confirmPassword || !sex || !position || birthday.length != 8}>Sign Up</Button>
+                    <Button mode="contained" onPress={signupHandler} loading={isLoading} disabled={isLoading || !email || password.length < 6 || !password || !confirmPassword || !sex || !position || birthday.length != 8}>Sign Up</Button>
                     <Text
                         onPress={() => navigation.replace('LoginScreen')}
                         style={{ textDecorationLine: 'underline', fontSize: 14, textAlign: 'center', marginTop: 20 }}
@@ -206,7 +211,8 @@ const SignupScreen = ({ navigation }: { navigation: SignupScreenNavigationProp }
                     {errorMessage}
                 </Snackbar>
             </View>
-        </TouchableWithoutFeedback>
+        {/* </TouchableWithoutFeedback> */}
+        </KeyboardAwareScrollView>
     );
 };
 
@@ -216,6 +222,9 @@ const styles = StyleSheet.create({
         padding: 20,
         alignItems: 'center',
         justifyContent: 'center',
+        width:'100%', 
+        maxWidth:1000, 
+        alignSelf:'center'
     },
     inputContainer: {
         width: '95%',

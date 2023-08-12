@@ -54,7 +54,7 @@ const SettingsScreen: React.FC<Props> = ({ }) => {
             </View>
 
             <Portal>
-                <Dialog visible={logoutVisible} onDismiss={hideLogoutDialog}>
+                <Dialog visible={logoutVisible} onDismiss={hideLogoutDialog} style={styles.dialogWrapper}>
                     <Dialog.Title>Log Out</Dialog.Title>
                     <Dialog.Content>
                         <Paragraph>Are you sure you want to log out?</Paragraph>
@@ -77,9 +77,19 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'space-between',
         padding: 16,
+        width: '100%', 
+        maxWidth: 1000, 
+        alignSelf: 'center'
     },
     logoutContainer: {
         marginBottom: 16,
+    },
+    dialogWrapper: {
+        width: '100%',
+        maxWidth: 1000,
+        alignSelf: 'center',
+        // alignItems: 'center', 
+        justifyContent: 'center',
     },
 });
 

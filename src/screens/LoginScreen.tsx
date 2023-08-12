@@ -20,7 +20,7 @@ const LoginScreen = ({ navigation }: { navigation: LoginScreenNavigationProp }) 
 
     const handleLogin = async () => {
         try {
-            const user = await login(email, password);
+            const user = await login(email.trim(), password);
             if (user) {
                 navigation.replace('HomeTabs');
             }
@@ -52,7 +52,7 @@ const LoginScreen = ({ navigation }: { navigation: LoginScreenNavigationProp }) 
     };
 
     return (
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        // <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
             <KeyboardAwareScrollView contentContainerStyle={styles.container}>
                 <View style={styles.inputContainer}>
                     <TextInput
@@ -97,7 +97,7 @@ const LoginScreen = ({ navigation }: { navigation: LoginScreenNavigationProp }) 
                     </Snackbar>
                 </View>
             </KeyboardAwareScrollView>
-        </TouchableWithoutFeedback>
+        // </TouchableWithoutFeedback>
     );
 };
 
@@ -105,6 +105,9 @@ const styles = StyleSheet.create({
     container: {
         flexGrow: 1,
         justifyContent: 'center',
+        width:'100%', 
+        maxWidth:1000, 
+        alignSelf:'center'
     },
     inputContainer: {
         paddingHorizontal: 20,

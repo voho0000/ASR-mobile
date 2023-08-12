@@ -35,10 +35,13 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
     const [prompts, setPrompts] = useState<Prompt[]>([]);
     const [selectedPrompt, setSelectedPrompt] = useState<string>('');
     const [gptModel, setGptModel] = useState<string>("")
-    const [patientId, setPatientId] = useState<string>(""); // Add a new state for patient ID
+
+    const [asrInputHeight, setAsrInputHeight] = useState<number>(40); 
+    const [gptInputHeight, setGptInputHeight] = useState<number>(40); 
+
 
     const formattedPrompts = prompts.map(prompt => prompt.name); // For SelectDropdown we only need the names
-    const oldPatientId = route.params.name;
+    const patientId = route.params.name;
     useEffect(() => {
         const fetchUserPreferences = async () => {
             try {
@@ -98,7 +101,7 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
                     visibilityTime: 2000,
                     autoHide: true,
                     bottomOffset: 40,
-                  });
+                });
             }
         } catch (error) {
             console.error("Failed to get response from GPT:", error);
@@ -121,7 +124,7 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
         const fetchData = async () => {
             try {
                 setIsLoading(true); // Start loading
-                const patientRecord = await fetchSinglePatientRecord(oldPatientId);
+                const patientRecord = await fetchSinglePatientRecord(patientId);
                 if (patientRecord) {
                     setAsrResponse(patientRecord.asrResponse);
                     setGptResponse(patientRecord.gptResponse);
@@ -131,7 +134,6 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
                 console.error("Failed to fetch data from Firestore:", error);
             } finally {
                 setIsLoading(false); // Finish loading
-                setPatientId(oldPatientId);
             }
         };
 
@@ -140,7 +142,7 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
 
     useEffect(() => {
         if (!isLoading) { // Only save to AsyncStorage if not loading data
-            uploadDataToFirestore(oldPatientId, patientId, patientInfo, asrResponse, gptResponse)
+            uploadDataToFirestore(patientId, patientInfo, asrResponse, gptResponse)
         }
     }, [patientInfo, asrResponse, gptResponse, patientId]); // Add isLoadingData to dependencies
 
@@ -162,23 +164,17 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
     }
 
     return (
-        <SafeAreaView style={{ flex: 1, marginTop: Platform.OS === 'android' ? 24 : 0 }}>
-            <TouchableRipple onPress={Keyboard.dismiss} style={{ flex: 1 }}>
+        <SafeAreaView style={{ flex: 1,  marginTop: Platform.OS === 'android' ? 24 : 0 }}>
                 <KeyboardAwareScrollView>
                     <View style={styles.scrollContainer}>
-                        <TextInput
-                            label="Patient ID"
-                            mode="outlined"
-                            style={{ width: '50%', marginBottom: 10, alignSelf: 'center' }}
-                            placeholder="Enter patient ID here"
-                            onChangeText={setPatientId}
-                            value={patientId}
-                        />
+                        <View style={{ width: '50%', marginBottom: 10, alignSelf: 'center', padding: 10, borderWidth: 1, borderColor: '#c4c4c4', borderRadius: 5 }}>
+                            <Text style={{ fontSize: 16 }}>{patientId}</Text>
+                        </View>
                         <TextInput
                             label="Patient Info"
                             mode="outlined"
                             multiline
-                            style={{ height: windowHeight * 0.1, width: '100%', marginBottom: 10 }}
+                            style={{ minHeight: windowHeight * 0.1,  maxWidth:1000, alignSelf:'center', width: '100%', marginBottom: 10 }}
                             placeholder="Enter patient info here"
                             onChangeText={setPatientInfo}
                             value={patientInfo}
@@ -246,28 +242,34 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
                         <TextInput
                             label="ASR result"
                             mode="outlined"
-                            multiline
-                            style={{ height: windowHeight * 0.2, width: '100%', marginTop: 10, marginBottom: 10 }}
+                            multiline 
+                            onContentSizeChange={(e) => {
+                                setAsrInputHeight(e.nativeEvent.contentSize.height);
+                            }}
+                            style={{ height: asrInputHeight, minHeight: windowHeight * 0.2, maxWidth:1000, alignSelf:'center', width: '100%', marginTop: 10, marginBottom: 10  }}
                             value={asrResponse}
                             onChangeText={setAsrResponse}
                             placeholder="Start recording to get ASR result"
-                            scrollEnabled
+                            // scrollEnabled
                         />
                         <Button mode="contained" onPress={sendToGPT} loading={isLoadingGpt}>Send to GPT</Button>
                         <TextInput
                             label="GPT result"
                             mode="outlined"
                             multiline
-                            style={{ height: windowHeight * 0.3, width: '100%', marginTop: 10, marginBottom: 20 }}
+                            onContentSizeChange={(e) => {
+                                setGptInputHeight(e.nativeEvent.contentSize.height);
+                            }}
+                            style={{ height: gptInputHeight, minHeight: windowHeight * 0.2, maxWidth:1000, alignSelf:'center', width: '100%', marginTop: 10, marginBottom: 20 }}
                             value={gptResponse}
                             onChangeText={setGptResponse}
                             placeholder="Medical note generated by GPT"
-                            scrollEnabled
+                            // scrollEnabled={false}
+                            // scrollEnabled
                         />
                         <StatusBar style="auto" />
                     </View>
                 </KeyboardAwareScrollView>
-            </TouchableRipple>
         </SafeAreaView>
     );
 };
@@ -275,9 +277,13 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
 const styles = StyleSheet.create({
     scrollContainer: {
         flex: 1,
-        padding: 10,
+        padding: 30,
         justifyContent: 'center',
-        // alignItems: 'center',
+        maxWidth:1000, 
+        // alignItems: 'center', 
+        alignSelf:'center',
+        width:'100%'
+        // alignContent: 'center',
     },
     container: {
         backgroundColor: 'white',
@@ -316,6 +322,16 @@ const styles = StyleSheet.create({
         height: 40,
         fontSize: 16,
     },
+});
+
+// Separate styles for web
+const webStyles = StyleSheet.create({
+    scrollContainer: {
+        ...styles.scrollContainer,
+        padding: 20,
+        maxWidth: 800,  // Set max width for web container
+        marginHorizontal: 'auto'  // Center the container on the web
+    }
 });
 
 export default RecordingScreen;

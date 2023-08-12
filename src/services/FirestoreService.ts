@@ -96,8 +96,7 @@ export const addPatientRecord = async (patientId: string): Promise<void> => {
 
 
 export const uploadDataToFirestore = async (
-  oldPatientId: string,
-  newPatientId: string,
+  patientId: string,
   patientInfo: string,
   asrResponse: string,
   gptResponse: string
@@ -109,13 +108,8 @@ export const uploadDataToFirestore = async (
       throw new Error('User not authenticated, please log in again');
     }
 
-    if (oldPatientId !== newPatientId) {
-      // delete old record
-      await deleteDoc(doc(db, 'PatientRecords', userId, 'PatientRecord', oldPatientId));
-    }
-
-    // add or update new record
-    await setDoc(doc(db, 'PatientRecords', userId, 'PatientRecord', newPatientId), {
+    // add or update record
+    await setDoc(doc(db, 'PatientRecords', userId, 'PatientRecord', patientId), {
       patientInfo,
       asrResponse,
       gptResponse,
@@ -394,5 +388,42 @@ export const deletePrompt = async (promptName: string): Promise<void> => {
   } catch (error) {
     handleFirestoreError(error as FirebaseError);
     throw error;
+  }
+};
+
+
+export const renamePatientId = async (
+  oldPatientId: string,
+  newPatientId: string
+) => {
+  try {
+    const userId = auth.currentUser?.uid;
+
+    if (!userId) {
+      throw new Error('User not authenticated, please log in again');
+    }
+
+    // Fetch existing data for the patient with oldPatientId
+    const docRef = doc(db, 'PatientRecords', userId, 'PatientRecord', oldPatientId);
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+      // Data exists for the oldPatientId
+
+      const patientData = docSnap.data();
+
+      if (oldPatientId !== newPatientId) {
+        // delete old record
+        await deleteDoc(docRef);
+      }
+
+      // add or update new record
+      await setDoc(doc(db, 'PatientRecords', userId, 'PatientRecord', newPatientId), patientData);
+    } else {
+      console.error(`No data found for patient with ID: ${oldPatientId}`);
+    }
+  } catch (error) {
+    handleFirestoreError(error as FirebaseError);
+    throw error; // re-throw the error after handling it
   }
 };
