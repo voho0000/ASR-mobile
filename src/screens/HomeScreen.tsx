@@ -6,8 +6,9 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { fetchPatientRecords, addPatientRecord, deletePatientRecord, renamePatientId } from '../services/FirestoreService';
 import { Button, List, Dialog, Portal, Paragraph, TextInput, HelperText, IconButton, Divider, ActivityIndicator } from 'react-native-paper';  // Imported from react-native-paper
-import { TouchableWithoutFeedback, Keyboard } from 'react-native';
 import { SafeAreaView } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view'
+
 
 // import CustomButtom from '../components/CustomButtom';
 
@@ -159,7 +160,7 @@ const HomeScreen = () => {
                     <Dialog visible={addDialogVisible} onDismiss={hideAddDialog} style={styles.dialogWrapper}>
                         <Dialog.Title>Add a Patient</Dialog.Title>
                         <Dialog.Content>
-                            <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+                            <KeyboardAwareScrollView >
                                 <View>
                                     <TextInput
                                         label="Patient ID"
@@ -181,7 +182,7 @@ const HomeScreen = () => {
                                         Patient ID cannot exceed 15 characters.
                                     </HelperText>
                                 </View>
-                            </TouchableWithoutFeedback>
+                            </KeyboardAwareScrollView>
                         </Dialog.Content>
                         <Dialog.Actions>
                             {isAdding && (
@@ -251,7 +252,7 @@ const HomeScreen = () => {
                     <Dialog visible={editDialogVisible} onDismiss={() => setEditDialogVisible(false)} style={styles.dialogWrapper}>
                         <Dialog.Title>Edit Patient</Dialog.Title>
                         <Dialog.Content>
-                            <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+                            <KeyboardAwareScrollView >
                                 <View>
                                     <TextInput
                                         label="Patient ID"
@@ -273,7 +274,7 @@ const HomeScreen = () => {
                                         Patient ID cannot exceed 15 characters.
                                     </HelperText>
                                 </View>
-                            </TouchableWithoutFeedback>
+                            </KeyboardAwareScrollView >
                         </Dialog.Content>
                         <Dialog.Actions>
                             {isRenaming && (

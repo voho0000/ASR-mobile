@@ -179,7 +179,7 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
                             setInfoInputHeight(e.nativeEvent.contentSize.height);
                         }}
                         style={{ 
-                            height: infoInputHeight+40, // +40 need to be removed for web version
+                            height: infoInputHeight, // +40 need to be removed for web version
                             minHeight: windowHeight * 0.1, 
                             maxWidth: 1000, 
                             alignSelf: 'center', 
@@ -259,7 +259,7 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
                             setAsrInputHeight(e.nativeEvent.contentSize.height);
                         }}
                         style={{ 
-                            height: asrInputHeight+40, // +40 need to be removed for web version
+                            height: asrInputHeight, // +40 need to be removed for web version
                             minHeight: windowHeight * 0.2, 
                             maxWidth: 1000, 
                             alignSelf: 'center', 
@@ -281,7 +281,7 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
                             setGptInputHeight(e.nativeEvent.contentSize.height);
                         }}
                         style={{
-                            height: gptInputHeight+40, // +40 need to be removed for web version
+                            height: gptInputHeight, // +40 need to be removed for web version
                             minHeight: windowHeight * 0.2, 
                             maxWidth: 1000,
                             alignSelf: 'center',
