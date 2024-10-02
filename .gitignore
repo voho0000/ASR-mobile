@@ -21,4 +21,4 @@ ios/Pods/
 .firebase/hosting.d2ViLWJ1aWxk.cache
 
 # Ignore Firebase configuration file
-src/firebaseConfig.ts
+firebaseConfig.ts
