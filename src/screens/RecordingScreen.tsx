@@ -71,7 +71,6 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
     }, []);
 
     const {
-        recording,
         isRecording,
         isPaused,
         counter,
