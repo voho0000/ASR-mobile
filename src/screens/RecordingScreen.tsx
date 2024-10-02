@@ -9,7 +9,7 @@ import { RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view'
 import { uploadDataToFirestore, fetchSinglePatientRecord, fetchPrompts, fetchSinglePrompt, fetchPreferences } from '../services/FirestoreService';
-import {  TextInput, Button, ActivityIndicator, TouchableRipple, Text, Paragraph, Dialog, Portal, HelperText } from 'react-native-paper';
+import { TextInput, Button, ActivityIndicator, TouchableRipple, Text, Paragraph, Dialog, Portal, HelperText } from 'react-native-paper';
 import { SafeAreaView } from 'react-native';
 import SelectDropdown from "react-native-select-dropdown";
 import Toast from 'react-native-toast-message';
@@ -72,11 +72,9 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
 
     const {
         isRecording,
-        isPaused,
         counter,
         startRecording,
         stopRecording,
-        pauseRecording,
     } = useRecording();
 
     // Inside your RecordingScreen component, get the item name from route params like so
@@ -169,7 +167,7 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
                     <View style={{ width: '50%', marginBottom: 10, alignSelf: 'center', padding: 10, borderWidth: 1, borderColor: '#c4c4c4', borderRadius: 5 }}>
                         <Text style={{ fontSize: 16 }}>{patientId}</Text>
                     </View>
-                    <Text style={{ fontWeight: 'bold', fontSize:16 }}>Patient Info</Text>
+                    <Text style={{ fontWeight: 'bold', fontSize: 16 }}>Patient Info</Text>
                     <TextInput
                         // label="Patient Info"
                         mode="outlined"
@@ -177,13 +175,13 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
                         onContentSizeChange={(e) => {
                             setInfoInputHeight(e.nativeEvent.contentSize.height);
                         }}
-                        style={{ 
+                        style={{
                             height: infoInputHeight, // +40 need to be removed for web version
-                            minHeight: windowHeight * 0.1, 
-                            maxWidth: 1000, 
-                            alignSelf: 'center', 
-                            width: '100%', 
-                            marginBottom: 10 
+                            minHeight: windowHeight * 0.1,
+                            maxWidth: 1000,
+                            alignSelf: 'center',
+                            width: '100%',
+                            marginBottom: 10
                         }}
                         placeholder="Enter patient info here"
                         onChangeText={setPatientInfo}
@@ -192,20 +190,14 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
                     />
                     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', paddingRight: 20 }}>
                         <View style={{
-                            justifyContent: 'space-between', flex: 0.25, flexDirection: 'row',
+                            justifyContent: 'center', flex: 0.2, flexDirection: 'row',
                             paddingLeft: 20,
                         }}>
                             {isRecording ? (
-                                <>
-                                    <IconButton
-                                        onPress={isPaused ? startRecording : pauseRecording}
-                                        iconName={isPaused ? "play" : "pause"}
-                                    />
-                                    <IconButton
-                                        onPress={handleStopRecording}
-                                        iconName="stop"
-                                    />
-                                </>
+                                <IconButton
+                                    onPress={handleStopRecording}
+                                    iconName="stop"
+                                />
                             ) : (
                                 <IconButton
                                     onPress={startRecording}
@@ -213,7 +205,7 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
                                 />
                             )}
                         </View>
-                        <View style={{ flex: 0.05 }}>
+                        <View style={{ flex: 0.1 }}>
                             {isTranscriptLoading && <ActivityIndicator size="small" style={{ paddingRight: 10 }} />}
                         </View>
                         <View style={{ flex: 0.2 }}>
@@ -249,7 +241,7 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
                             />
                         </View>
                     </View>
-                    <Text style={{ fontWeight: 'bold', fontSize:16, marginTop: 10,  }}>ASR result</Text>
+                    <Text style={{ fontWeight: 'bold', fontSize: 16, marginTop: 10, }}>ASR result</Text>
                     <TextInput
                         // label="ASR result"
                         mode="outlined"
@@ -257,13 +249,13 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
                         onContentSizeChange={(e) => {
                             setAsrInputHeight(e.nativeEvent.contentSize.height);
                         }}
-                        style={{ 
+                        style={{
                             height: asrInputHeight, // +40 need to be removed for web version
-                            minHeight: windowHeight * 0.2, 
-                            maxWidth: 1000, 
-                            alignSelf: 'center', 
-                            width: '100%', 
-                            marginBottom: 10 
+                            minHeight: windowHeight * 0.2,
+                            maxWidth: 1000,
+                            alignSelf: 'center',
+                            width: '100%',
+                            marginBottom: 10
                         }}
                         value={asrResponse}
                         onChangeText={setAsrResponse}
@@ -271,7 +263,7 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
                     // scrollEnabled
                     />
                     <Button mode="contained" onPress={sendToGPT} loading={isLoadingGpt}>Send to GPT</Button>
-                    <Text style={{ fontWeight: 'bold', fontSize:16, marginTop: 10,  }}>GPT result</Text>
+                    <Text style={{ fontWeight: 'bold', fontSize: 16, marginTop: 10, }}>GPT result</Text>
                     <TextInput
                         // label="GPT result"
                         mode="outlined"
@@ -281,7 +273,7 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
                         }}
                         style={{
                             height: gptInputHeight, // +40 need to be removed for web version
-                            minHeight: windowHeight * 0.2, 
+                            minHeight: windowHeight * 0.2,
                             maxWidth: 1000,
                             alignSelf: 'center',
                             width: '100%',

@@ -26,7 +26,7 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.voho0000.gptMedicalNote",
-      "versionCode": 2             
+      "versionCode": 2
     },
     "web": {
       "favicon": "./assets/gpt-medical-note-favicon.png"
@@ -35,6 +35,9 @@
       "eas": {
         "projectId": "34d67b21-0db8-4552-a4a0-ad476642ba47"
       }
-    }
+    },
+    "plugins": [
+      "expo-font"
+    ]
   }
 }
