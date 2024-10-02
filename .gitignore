@@ -19,3 +19,6 @@ ios/Pods/
 .metro-health-check*
 
 .firebase/hosting.d2ViLWJ1aWxk.cache
+
+# Ignore Firebase configuration file
+src/firebaseConfig.ts

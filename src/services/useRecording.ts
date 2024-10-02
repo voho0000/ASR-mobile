@@ -94,7 +94,7 @@ export const useRecording = () => {
 
 
 // 停止錄音
-const stopRecording = async () => {
+const stopRecording = async (shouldShowToast: boolean = true) => {
   if (Platform.OS === 'web') {
     try {
       const [buffer, blob] = await mp3Recorder.stop().getMp3();
@@ -108,17 +108,20 @@ const stopRecording = async () => {
       if (blob) {
         try {
           const transcript = await transcribeAudio(blob); // 傳遞 Blob
-          showToast('Successfully transcribed audio', 'success');
-          return transcript;
+          if (shouldShowToast) {
+            showToast('Successfully transcribed audio', 'success');
+          }          return transcript;
         } catch (error) {
           console.error('Failed to transcribe audio:', error);
-          showToast('Failed to transcribe audio. Please try again.');
-        }
+          if (shouldShowToast) {
+            showToast('Failed to transcribe audio. Please try again.');
+          }        }
       }
     } catch (error) {
       console.error('Failed to stop web recording:', error);
-      showToast('Failed to stop recording. Please try again.');
-    }
+      if (shouldShowToast) {
+        showToast('Failed to stop recording. Please try again.');
+      }    }
   } else {
     try {
       await recording?.stopAndUnloadAsync();
@@ -131,17 +134,22 @@ const stopRecording = async () => {
       if (audioUri) {
         try {
           const transcript = await transcribeAudio(audioUri); // 傳遞 URI
-          showToast('Successfully transcribed audio', 'success');
+          if (shouldShowToast) {
+            showToast('Successfully transcribed audio', 'success');
+          }          
           return transcript;
         } catch (error) {
           console.error('Failed to transcribe audio:', error);
-          showToast('Failed to transcribe audio. Please try again.');
+          if (shouldShowToast) {
+            showToast('Failed to transcribe audio. Please try again.');
+          }        
         }
       }
     } catch (error) {
       console.error('Failed to stop app recording:', error);
-      showToast('Failed to stop recording. Please try again.');
-    }
+      if (shouldShowToast) {
+        showToast('Failed to stop recording. Please try again.');
+      }    }
   }
 };
 

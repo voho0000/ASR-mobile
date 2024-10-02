@@ -13,6 +13,7 @@ import { TextInput, Button, ActivityIndicator, TouchableRipple, Text, Paragraph,
 import { SafeAreaView } from 'react-native';
 import SelectDropdown from "react-native-select-dropdown";
 import Toast from 'react-native-toast-message';
+import PromptDropdown from '../components/PromptDropdown';  // 引入 PromptDropdown 組件
 
 type RecordingScreenRouteProp = RouteProp<RootStackParamList, 'RecordingScreen'>;
 
@@ -32,7 +33,7 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
     const [isLoadingGpt, setIsLoadingGpt] = useState<boolean>(false); // Handles loading state
     const [isLoading, setIsLoading] = useState(true); // Add a new loading state
     const [isTranscriptLoading, setIsTranscriptLoading] = useState(false);
-    const [prompts, setPrompts] = useState<Prompt[]>([]);
+    // const [prompts, setPrompts] = useState<Prompt[]>([]);
     const [selectedPrompt, setSelectedPrompt] = useState<string>('');
     const [gptModel, setGptModel] = useState<string>("")
     const windowHeight = Dimensions.get('window').height;
@@ -41,7 +42,7 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
     const [gptInputHeight, setGptInputHeight] = useState<number>(80);
 
 
-    const formattedPrompts = prompts.map(prompt => prompt.name); // For SelectDropdown we only need the names
+    // const formattedPrompts = prompts.map(prompt => prompt.name); // For SelectDropdown we only need the names
     const patientId = route.params.name;
     useEffect(() => {
         const fetchUserPreferences = async () => {
@@ -57,18 +58,18 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
         fetchUserPreferences();
     }, []);
 
-    useEffect(() => {
-        const fetchUserPrompts = async () => {
-            try {
-                const promptsData = await fetchPrompts();
-                setPrompts(promptsData);
-            } catch (error) {
-                console.error("Failed to fetch prompts:", error);
-            }
-        };
+    // useEffect(() => {
+    //     const fetchUserPrompts = async () => {
+    //         try {
+    //             const promptsData = await fetchPrompts();
+    //             setPrompts(promptsData);
+    //         } catch (error) {
+    //             console.error("Failed to fetch prompts:", error);
+    //         }
+    //     };
 
-        fetchUserPrompts();
-    }, []);
+    //     fetchUserPrompts();
+    // }, []);
 
     const {
         isRecording,
@@ -77,7 +78,14 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
         stopRecording,
     } = useRecording();
 
-    // Inside your RecordingScreen component, get the item name from route params like so
+    // Stop recording when the component is unmounted
+    useEffect(() => {
+        return () => {
+            if (isRecording) {
+                stopRecording(false);  // Stop recording if the user leaves the screen
+            }
+        };
+    }, [isRecording]);
 
     const sendToGPT = async () => {
         setIsLoadingGpt(true);
@@ -212,32 +220,9 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
                             <Text style={{ fontSize: 14, }}>{msToTime(counter)}</Text>
                         </View>
                         <View style={{ flex: 0.4 }}>
-                            <SelectDropdown
-                                data={formattedPrompts}
-                                onSelect={(selectedItem, index) => {
-                                    setSelectedPrompt(selectedItem);
-                                }}
-                                buttonTextAfterSelection={(selectedItem, index) => {
-                                    // text representing selected item
-                                    return selectedItem;
-                                }}
-                                rowTextForSelection={(item, index) => {
-                                    // text for row
-                                    return item;
-                                }}
-                                buttonStyle={{
-                                    width: 160,
-                                    height: 50,
-                                    borderColor: '#c4c4c4',
-                                    borderWidth: 1,
-                                    borderRadius: 5,
-                                    justifyContent: 'center',
-                                }}
-                                buttonTextStyle={{ textAlign: 'center', color: '#757575' }}
-                                dropdownStyle={{ marginTop: -30 }}
-                                rowStyle={{ borderColor: '#c4c4c4', borderWidth: 1 }}
-                                rowTextStyle={{ color: '#757575', textAlign: 'center', paddingLeft: 0 }}
-                                defaultButtonText={selectedPrompt || "select a prompt"}
+                            <PromptDropdown
+                                selectedPrompt={selectedPrompt}
+                                setSelectedPrompt={setSelectedPrompt}
                             />
                         </View>
                     </View>

@@ -1,3 +1,4 @@
+// PromptDetailScreen.tsx
 import React, { useState, useEffect } from 'react';
 import { View, Dimensions } from 'react-native';
 import { TextInput, Button, HelperText, ActivityIndicator } from 'react-native-paper';
@@ -19,11 +20,11 @@ type Props = {
     route: PromptDetailScreenRouteProp;
 };
 
-const PromptDetailScreen: React.FC<Props> = ({ route, navigation }) => {
+const PromptDetailScreen: React.FC<Props & { onClose?: () => void }> = ({ route, navigation, onClose }) => {
     const [isLoading, setIsLoading] = useState(true);
     const [name, setName] = useState('');
     const [content, setContent] = useState('');
-    const isNew = route.params.isNew
+    const {isNew} = route.params
     const promptName = route.params.name
     const [isNameDuplicate, setIsNameDuplicate] = useState(false);
     const [errorText, setErrorText] = useState('');
@@ -43,13 +44,16 @@ const PromptDetailScreen: React.FC<Props> = ({ route, navigation }) => {
     const handleSave = async () => {
         if (route.params.isNew) {
             await addPrompt(name, content);
-        } else {
-            if (promptName) {
-                await updatePrompt(promptName, name, content);
-            }
+        } else if (promptName) {
+            await updatePrompt(promptName, name, content);
         }
-        navigation.goBack();
-    };
+        if (onClose) {
+            // 如果是從彈出視窗進行的保存，則關閉視窗
+            onClose();
+        } else {
+            // 否則使用 navigation.goBack() 返回上一頁
+            navigation.goBack();
+        }    };
 
     const checkPromptExists = async (name: string): Promise<boolean> => {
         try {

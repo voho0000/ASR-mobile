@@ -37,7 +37,6 @@
 
 // export default IconButton;
 
-
 import React from 'react';
 import { Pressable } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
@@ -45,14 +44,14 @@ import Icon from 'react-native-vector-icons/FontAwesome';
 interface IconButtonProps {
   onPress: () => void;
   iconName: string;
+  size?: number; // 新增 size prop，默認值為 35
+  marginRight?: number; // 新增 marginRight prop，默認值為 20
 }
 
-const IconButton: React.FC<IconButtonProps> = ({ onPress, iconName }) => {
+const IconButton: React.FC<IconButtonProps> = ({ onPress, iconName, size = 35, marginRight = 20 }) => {
   return (
-    <Pressable
-      onPress={onPress}
-    >
-      <Icon name={iconName} size={35} color="gray" style={{ marginRight: 20,}}/>
+    <Pressable onPress={onPress}>
+      <Icon name={iconName} size={size} color="gray" style={{ marginRight }} />
     </Pressable>
   );
 };

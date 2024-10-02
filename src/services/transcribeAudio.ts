@@ -1,57 +1,3 @@
-// transcribeAudio.ts
-// import { OPENAI_API_KEY } from '@env';
-// import { Platform } from 'react-native';
-// import { fetchPreferences } from './FirestoreService';
-
-// export const transcribeAudio = async (audioUri: string) => {
-//     const data = new FormData();
-//     try {
-//         const preferences = await fetchPreferences();
-//         if (preferences.commonWords) {
-//             data.append('prompt', preferences.commonWords)
-//         }
-//     } catch (error) {
-//         console.error('Failed to fetch preferences:', error);
-//         // Handle the error, possibly by informing the user about it
-//     }
-//     if (Platform.OS === 'web') {
-//         const response = await fetch(audioUri);
-//         const blob = await response.blob();
-//         const file = new File([blob], 'recording.m4a', { type: 'audio/m4a' });
-//         data.append('file', file);
-//     } else {
-//         const file = { uri: audioUri, name: 'recording.m4a', type: 'audio/m4a' };
-//         data.append('file', file as unknown as Blob);
-//     }
-
-//     try {
-//         const response = await fetch('https://us-central1-gpt-medical-note.cloudfunctions.net/uploadFile', {
-//             method: 'POST',
-//             body: data,
-//             headers: {
-//             },
-//         });
-//         const jsonResponse = await response.json(); // <-- add await here
-//         if (jsonResponse) {
-//             return jsonResponse['transcript']; // Assuming 'transcript' is a field in the response
-//         } else {
-//             console.error('Failed to transcribe audio:', jsonResponse);
-//             throw new Error('Failed to transcribe audio');
-//         }
-//                 // const jsonResponse = await response.json();
-//         // if (jsonResponse) {
-//         //     return jsonResponse['text']; // Assuming 'transcript' is a field in the response
-//         // } else {
-//         //     console.error('Failed to transcribe audio:', jsonResponse);
-//         //     throw new Error('Failed to transcribe audio');
-//         // }
-//     } catch (error) {
-//         console.error('Error during transcription:', error);
-//         throw new Error('Error occurred while transcribing');
-//     }
-
-// };
-
 // export const transcribeAudio = async (audioBlob: Blob): Promise<string> => {
 //     const OPENAI_API_KEY = "";
     
@@ -59,7 +5,6 @@
 //     data.append('file', audioBlob, 'audio.mp3');  // 將 Blob 作為文件附加到 FormData
 //     data.append('model', 'whisper-1');
 //     data.append('prompt', 'The following is about a medical summary of a patient. Answer in Traditional Chinese and English.');
-  
 //     try {
 //       const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
 //         method: 'POST',
@@ -69,7 +14,6 @@
 //           // 請注意，我們不需要在這裡設置 `Content-Type`，瀏覽器會自動設置 `multipart/form-data` 邊界
 //         },
 //       });
-  
 //       const jsonResponse = await response.json();
 //       console.log(jsonResponse);
 //       return jsonResponse['text'];
