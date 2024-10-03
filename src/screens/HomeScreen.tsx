@@ -19,8 +19,7 @@ type HomeScreenNavigationProp = NativeStackNavigationProp<
 
 const HomeScreen = () => {
     const [isLoading, setIsLoading] = useState(true);
-    const [items, setItems] = useState<{ id: string, info: string, lastEdited?: Date }[]>([]);
-    const navigation = useNavigation<HomeScreenNavigationProp>();
+    const [items, setItems] = useState<{ id: string, info: string, asrResponse?: string, gptResponse?: string, lastEdited?: Date }[]>([]); const navigation = useNavigation<HomeScreenNavigationProp>();
     const isFocused = useIsFocused();
     const [visible, setVisible] = useState(false); // State for Dialog visibility
     const [selectedIndex, setSelectedIndex] = useState<number | null>(null); // new state for the selected index
@@ -81,7 +80,7 @@ const HomeScreen = () => {
         try {
             const currentDate = new Date(); // Get local date
             await addPatientRecord(inputValue, currentDate);
-            const newItems = [...items, { id: inputValue, info: '', lastEdited: currentDate }];
+            const newItems = [...items, { id: inputValue, info: '', asrResponse: '', gptResponse: '', lastEdited: currentDate }];
             // Sort after adding
             const sortedItems = newItems.sort((a, b) => {
                 if (!a.lastEdited) { return 1 };
@@ -219,40 +218,40 @@ const HomeScreen = () => {
                     keyExtractor={(item, index) => index.toString()}
                     renderItem={({ item, index }) => (
                         <List.Item
-                        style={{ paddingVertical: 0, minHeight: 65 }} // Ensure the row has a consistent height
-                        title={() => (
-                            <View style={{ flexDirection: 'column', justifyContent: 'flex-start' }}>
-                                {/* Title section with fixed space at the top */}
-                                <View style={{ minHeight: 20 }}> {/* Fixed space for the title */}
-                                    <Text style={{ fontWeight: 'bold', fontSize: 16 }}>
-                                        {item.id}
-                                    </Text>
+                            style={{ paddingVertical: 0, minHeight: 65 }} // Ensure the row has a consistent height
+                            title={() => (
+                                <View style={{ flexDirection: 'column', justifyContent: 'flex-start' }}>
+                                    {/* Title section with fixed space at the top */}
+                                    <View style={{ minHeight: 20 }}> {/* Fixed space for the title */}
+                                        <Text style={{ fontWeight: 'bold', fontSize: 16 }}>
+                                            {item.id}
+                                        </Text>
+                                    </View>
                                 </View>
-                            </View>
-                        )}
-                        description={() => (
-                            <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginTop: 5 }}>
-                                {/* Left side: Last edited with fixed width */}
-                                <View style={{ width: 70 }}> {/* Fixed width for date */}
-                                    <Text
-                                        style={{ fontSize: 12, color: '#6b6b6b', overflow: 'hidden' }}
-                                        numberOfLines={1} // Limit to one line for the date
-                                    >
-                                        {item.lastEdited ? new Date(item.lastEdited).toLocaleDateString() : ''}
-                                    </Text>
+                            )}
+                            description={() => (
+                                <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginTop: 5 }}>
+                                    {/* Left side: Last edited with fixed width */}
+                                    <View style={{ width: 70 }}> {/* Fixed width for date */}
+                                        <Text
+                                            style={{ fontSize: 12, color: '#6b6b6b', overflow: 'hidden' }}
+                                            numberOfLines={1} // Limit to one line for the date
+                                        >
+                                            {item.lastEdited ? new Date(item.lastEdited).toLocaleDateString() : ''}
+                                        </Text>
+                                    </View>
+
+                                    {/* Right side: Patient info */}
+                                    <View style={{ flex: 1, marginLeft: 10 }}>
+                                        <Text
+                                            style={{ fontSize: 12, color: '#6b6b6b', overflow: 'hidden', textAlign: 'left' }}
+                                            numberOfLines={2} // Limit to two lines for patient info
+                                        >
+                                            {/* Show patient info, then fallback to asrResponse, and finally gptResponse */}
+                                            {item.info || item.asrResponse || item.gptResponse || '\n'}                                    </Text>
+                                    </View>
                                 </View>
-            
-                                {/* Right side: Patient info */}
-                                <View style={{ flex: 1, marginLeft: 10 }}>
-                                    <Text
-                                        style={{ fontSize: 12, color: '#6b6b6b', overflow: 'hidden', textAlign: 'left' }}
-                                        numberOfLines={2} // Limit to two lines for patient info
-                                    >
-                                        {item.info ? item.info+'\n' : '\n'}
-                                    </Text>
-                                </View>
-                            </View>
-                        )}
+                            )}
                             onPress={() => handlePressItem(item.id)}
                             right={props =>
                             (

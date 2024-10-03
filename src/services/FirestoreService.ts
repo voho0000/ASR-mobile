@@ -54,7 +54,7 @@ const handleFirestoreError = (error: any) => {
 
 
 
-export const fetchPatientRecords = async (): Promise<{ id: string, info: string, lastEdited?: Date }[]> => {
+export const fetchPatientRecords = async (): Promise<{ id: string, info: string, asrResponse?: string, gptResponse?: string, lastEdited?: Date }[]> => {
   try {
     const userId = auth.currentUser?.uid;
 
@@ -65,10 +65,12 @@ export const fetchPatientRecords = async (): Promise<{ id: string, info: string,
     const patientRecordsRef = collection(db, 'PatientRecords', userId, 'PatientRecord');
     const patientRecordsSnap = await getDocs(patientRecordsRef);
 
-    // Ensure each record includes lastEdited (if it exists)
+    // Ensure each record includes lastEdited and patientInfo, asrResponse, gptResponse
     return patientRecordsSnap.docs.map(doc => ({
       id: doc.id,
-      info: doc.data().patientInfo,
+      info: doc.data().patientInfo || '',  // Defaults to empty string if undefined
+      asrResponse: doc.data().asrResponse || '', // Defaults to empty string if undefined
+      gptResponse: doc.data().gptResponse || '', // Defaults to empty string if undefined
       lastEdited: doc.data().lastEdited ? doc.data().lastEdited.toDate() : undefined  // Use undefined for missing lastEdited
     }));
   } catch (error) {
