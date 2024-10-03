@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Platform } from 'react-native';
+import { View, Text, Dimensions } from 'react-native';
 import IconButton from './IconButton';
 import SelectDropdown from "react-native-select-dropdown";
-import { TextInput, Button, Dialog, Portal, ActivityIndicator } from 'react-native-paper';
+import { TextInput, Button, Dialog, Portal, ActivityIndicator, HelperText } from 'react-native-paper';
 import { updatePrompt, fetchSinglePrompt, fetchPrompts } from '../services/FirestoreService';
 
 interface PromptDropdownProps {
@@ -13,10 +13,14 @@ interface PromptDropdownProps {
 const PromptDropdown: React.FC<PromptDropdownProps> = ({ selectedPrompt, setSelectedPrompt }) => {
     const [editDialogVisible, setEditDialogVisible] = useState(false);
     const [editedPromptContent, setEditedPromptContent] = useState('');
+    const [editedPromptName, setEditedPromptName] = useState('');
     const [currentPromptIndex, setCurrentPromptIndex] = useState<number | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [prompts, setPrompts] = useState<string[]>([]);
-    const [promptName, setPromptName] = useState('');
+    const [originalPromptName, setOriginalPromptName] = useState('');
+    const [isNameDuplicate, setIsNameDuplicate] = useState(false);
+    const [errorText, setErrorText] = useState('');
+    const windowHeight = Dimensions.get('window').height;  // 計算屏幕高度
 
     // 初始化時加載 prompts
     useEffect(() => {
@@ -39,7 +43,8 @@ const PromptDropdown: React.FC<PromptDropdownProps> = ({ selectedPrompt, setSele
         try {
             const selectedPromptName = prompts[index];
             setCurrentPromptIndex(index);
-            setPromptName(selectedPromptName);
+            setOriginalPromptName(selectedPromptName);
+            setEditedPromptName(selectedPromptName);
             setIsLoading(true);
 
             const fetchedPrompt = await fetchSinglePrompt(selectedPromptName);
@@ -58,14 +63,18 @@ const PromptDropdown: React.FC<PromptDropdownProps> = ({ selectedPrompt, setSele
     };
 
     const handleSavePrompt = async () => {
-        if (currentPromptIndex !== null) {
+        if (currentPromptIndex !== null && !isNameDuplicate && editedPromptName.trim().length <= 20) {
             try {
                 setIsLoading(true);
-                const newPromptName = prompts[currentPromptIndex];
-                await updatePrompt(promptName, newPromptName, editedPromptContent);
-                
+                await updatePrompt(originalPromptName, editedPromptName, editedPromptContent);
+
                 // 更新選中的 prompt
-                setSelectedPrompt(newPromptName);  // 讓 RecordingScreen 更新為最新選中的 prompt
+                setSelectedPrompt(editedPromptName);
+
+                // 更新 prompts 列表
+                const updatedPrompts = [...prompts];
+                updatedPrompts[currentPromptIndex] = editedPromptName;
+                setPrompts(updatedPrompts);
 
                 hideEditDialog();
             } catch (error) {
@@ -73,6 +82,23 @@ const PromptDropdown: React.FC<PromptDropdownProps> = ({ selectedPrompt, setSele
             } finally {
                 setIsLoading(false);
             }
+        }
+    };
+
+    // 檢查 prompt 名稱是否存在並限制字符長度
+    const handleSetName = async (text: string) => {
+        setEditedPromptName(text);
+        if (text.length <= 20) {
+            const isDuplicate = prompts.some(prompt => prompt === text && prompt !== originalPromptName);
+            if (isDuplicate) {
+                setIsNameDuplicate(true);
+                setErrorText('This prompt name already exists. Please choose a different name.');
+            } else {
+                setIsNameDuplicate(false);
+                setErrorText('');
+            }
+        } else {
+            setErrorText('Prompt name cannot exceed 20 characters.');
         }
     };
 
@@ -96,7 +122,6 @@ const PromptDropdown: React.FC<PromptDropdownProps> = ({ selectedPrompt, setSele
                             height: 50,
                             justifyContent: 'space-between',
                             paddingLeft: 10,
-                            // paddingRight: 10,
                         }}>
                             <Text style={{ color: '#757575', textAlign: 'center' }}>
                                 {item}
@@ -104,8 +129,8 @@ const PromptDropdown: React.FC<PromptDropdownProps> = ({ selectedPrompt, setSele
                             <IconButton
                                 onPress={() => showEditDialog(index)}
                                 iconName="pencil"
-                                size={20}         // 調整圖標大小
-                                marginRight={10}  // 調整右邊距離
+                                size={20}         
+                                marginRight={10}
                             />
                         </View>
                     )}
@@ -131,8 +156,8 @@ const PromptDropdown: React.FC<PromptDropdownProps> = ({ selectedPrompt, setSele
                     visible={editDialogVisible}
                     onDismiss={hideEditDialog}
                     style={{
-                        width: '100%', // 佔滿寬度
-                        maxWidth: 1000, // 最大寬度設置為1000
+                        width: '100%',
+                        maxWidth: 1000,
                         alignSelf: 'center',
                     }}
                 >
@@ -142,14 +167,17 @@ const PromptDropdown: React.FC<PromptDropdownProps> = ({ selectedPrompt, setSele
                             <ActivityIndicator animating={true} size="large" />
                         ) : (
                             <View>
-                                {/* 顯示 Prompt 名稱 */}
+                                {/* 可修改 Prompt 名稱 */}
                                 <TextInput
                                     label="Prompt Name"
-                                    value={promptName}
+                                    value={editedPromptName}
+                                    onChangeText={handleSetName}
                                     mode="outlined"
-                                    disabled={true}
                                     style={{ marginBottom: 10 }}
                                 />
+                                <HelperText type="error" visible={isNameDuplicate || editedPromptName.length > 20}>
+                                    {errorText}
+                                </HelperText>
 
                                 {/* 可滾動的多行文本框 */}
                                 <TextInput
@@ -158,7 +186,7 @@ const PromptDropdown: React.FC<PromptDropdownProps> = ({ selectedPrompt, setSele
                                     value={editedPromptContent}
                                     onChangeText={setEditedPromptContent}
                                     mode="outlined"
-                                    style={{ height: 150, marginBottom: 10 }}
+                                    style={{ height: windowHeight * 0.4, marginBottom: 10, width: '100%' }}
                                     scrollEnabled
                                 />
                             </View>
@@ -166,7 +194,7 @@ const PromptDropdown: React.FC<PromptDropdownProps> = ({ selectedPrompt, setSele
                     </Dialog.Content>
                     <Dialog.Actions>
                         <Button onPress={hideEditDialog}>Cancel</Button>
-                        <Button onPress={handleSavePrompt} disabled={isLoading}>
+                        <Button onPress={handleSavePrompt} disabled={isLoading || isNameDuplicate || editedPromptName.length > 20 || editedPromptName.trim() === ''}>
                             Save
                         </Button>
                     </Dialog.Actions>

@@ -25,11 +25,14 @@
 
 
 import { fetchPreferences } from './FirestoreService';
+import * as OpenCC from 'opencc-js';
 
 // 修改過的 transcribeAudio 函數
 export const transcribeAudio = async (audioInput: string | Blob): Promise<string> => {
     const data = new FormData();
-    
+    // 初始化繁體中文轉換器
+    const converter = OpenCC.Converter({ from: 'cn', to: 'tw' }); // 簡轉繁
+
     // 添加用戶偏好（如常用詞）到請求中
     try {
         const preferences = await fetchPreferences();
@@ -39,16 +42,6 @@ export const transcribeAudio = async (audioInput: string | Blob): Promise<string
     } catch (error) {
         console.error('Failed to fetch preferences:', error);
     }
-
-    // // 檢查是 Web 平台還是其他平台
-    // if (Platform.OS === 'web') {
-    //     // 直接使用 Blob
-    //     data.append('file', audioInput, 'recording.mp3'); // 使用 .mp3 或其他適當格式
-    // } else {
-    //     // 對於其他平台，假設是 React Native 的情況
-    //     const file = { uri: audioInput as unknown as string, name: 'recording.m4a', type: 'audio/m4a' };
-    //     data.append('file', file as unknown as Blob); // 強制類型轉換為 Blob
-    // }
 
     if (audioInput instanceof Blob) {
         // 如果是 Blob（網頁版）
@@ -72,7 +65,7 @@ export const transcribeAudio = async (audioInput: string | Blob): Promise<string
         
         const jsonResponse = await response.json(); // 等待 JSON 響應
         if (jsonResponse) {
-            return jsonResponse['transcript']; // 返回轉錄的文本
+            return converter(jsonResponse['transcript']);// 返回轉錄的文本
         } else {
             console.error('Failed to transcribe audio:', jsonResponse);
             throw new Error('Failed to transcribe audio');
