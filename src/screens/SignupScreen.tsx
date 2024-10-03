@@ -1,14 +1,13 @@
-// SignupScreen.tsx
 import React, { useState } from 'react';
-import { View, ScrollView, StyleSheet, TouchableWithoutFeedback, Keyboard, TouchableOpacity } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { createUser } from '../services/auth';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import Toast from 'react-native-toast-message';
 import { TextInput, Button, HelperText, Snackbar, Text } from 'react-native-paper';
 import { initializePreferences, createUserInfo } from '../services/FirestoreService';
-import SelectDropdown from "react-native-select-dropdown";
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view'
+import CustomSelectDropdown from '../components/CustomSelectDropdown'; // Using CustomSelectDropdown
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { functions } from "../firebaseConfig";
 import { httpsCallable } from "firebase/functions";
 
@@ -18,8 +17,7 @@ type SignupScreenNavigationProp = NativeStackNavigationProp<
 >;
 
 type SexType = 'Male' | 'Female' | null;
-type PositionType = 'Medical Student' | 'Intern' | 'PGY' | 'Resident' | 'Fellow' | 'Attending' | 'Other' | null;
-
+type PositionType = 'Medical Student' | 'PGY' | 'Resident' | 'Fellow' | 'Attending' | 'Other' | null;
 
 const SignupScreen = ({ navigation }: { navigation: SignupScreenNavigationProp }) => {
     const [email, setEmail] = useState('');
@@ -30,31 +28,18 @@ const SignupScreen = ({ navigation }: { navigation: SignupScreenNavigationProp }
     const [sex, setSex] = useState<SexType>(null);
     const [birthday, setBirthday] = useState<string>('');
     const [position, setPosition] = useState<PositionType>(null);
-    const [openSex, setOpenSex] = useState(false);
-    const [openPosition, setOpenPosition] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
-    // Create constants for dropdown data
-    const sexData = [
-        { label: 'Male', value: 'Male' },
-        { label: 'Female', value: 'Female' }
-    ];
-
+    // Now `sexData` and `positionData` are simple arrays of strings
+    const sexData = ['Male', 'Female'];
     const positionData = [
-        { label: 'Medical Student', value: 'Medical Student' },
-        { label: 'Intern', value: 'Intern' },
-        { label: 'PGY', value: 'PGY' },
-        { label: 'Resident', value: 'Resident' },
-        { label: 'Fellow', value: 'Fellow' },
-        { label: 'Attending', value: 'Attending' },
-        { label: 'Other', value: 'Other' }
+        'Medical Student', 'PGY', 'Resident',
+        'Fellow', 'Attending', 'Other'
     ];
 
-    // const isBirthdayToday = birthday.toISOString().slice(0, 10) === today.toISOString().slice(0, 10);
     const handleDateChange = (input: string) => {
         setBirthday(input);
     };
-
 
     const signupHandler = async () => {
         if (password !== confirmPassword) {
@@ -67,9 +52,8 @@ const SignupScreen = ({ navigation }: { navigation: SignupScreenNavigationProp }
             const user = await createUser(email.trim(), password);
             if (user && sex && position && birthday) {
                 try {
-                    await initializePreferences();  // Initialize the preferences document for this user
+                    await initializePreferences();
                     await createUserInfo(user.uid, email.trim(), sex, birthday, position);
-                    // Here, we call the cloud function to add default prompts
                     const addDefaultPrompts = httpsCallable(functions, 'addDefaultPrompts');
                     await addDefaultPrompts({ userId: user.uid });
                     
@@ -85,7 +69,6 @@ const SignupScreen = ({ navigation }: { navigation: SignupScreenNavigationProp }
                     navigation.replace('LoginScreen');
                 } catch (error) {
                     console.error('Failed to initialize preferences:', error);
-                    // Handle the error, possibly by informing the user about it
                 }
             }
         } catch (error: any) {
@@ -95,11 +78,9 @@ const SignupScreen = ({ navigation }: { navigation: SignupScreenNavigationProp }
         setIsLoading(false);
     };
 
-
     return (
         <KeyboardAwareScrollView>
-            {/* <TouchableWithoutFeedback onPress={Keyboard.dismiss}> */}
-            <View style={styles.container} >
+            <View style={styles.container}>
                 <View style={styles.inputContainer}>
                     <TextInput
                         mode="outlined"
@@ -124,85 +105,58 @@ const SignupScreen = ({ navigation }: { navigation: SignupScreenNavigationProp }
                         secureTextEntry
                         style={styles.inputField}
                     />
-                    <Text >Sex</Text>
+                    <Text>Sex</Text>
 
-                    <SelectDropdown
+                    {/* Use CustomSelectDropdown for sex */}
+                    <CustomSelectDropdown
                         data={sexData}
-                        onSelect={(selectedItem, index) => {
-                            setSex(selectedItem.value);
-                        }}
-                        buttonTextAfterSelection={(selectedItem, index) => {
-                            return selectedItem.label;
-                        }}
-                        rowTextForSelection={(item, index) => {
-                            return item.label;
-                        }}
-                        buttonStyle={{
-                            width: '100%',
-                            height: 50,
-                            borderColor: '#c4c4c4',
-                            borderWidth: 1,
-                            borderRadius: 5,
-                            justifyContent: 'flex-start',
-                            paddingHorizontal: 10,
-                            backgroundColor: '#fff',
-                            marginTop: 10,
-                            marginBottom: 10,
-                        }}
-                        buttonTextStyle={{ textAlign: 'center', color: '#000000' }}
-                        dropdownStyle={{ marginTop: -30, borderColor: '#c4c4c4', borderWidth: 1, borderRadius: 5, backgroundColor: '#fff' }}
-                        defaultButtonText={sex || "Select sex"} />
+                        selectedItem={sex || 'Select sex'}
+                        setSelectedItem={(item) => setSex(item as SexType)}
+                        getItemLabel={(item) => item}
+                    />
+
                     <View style={styles.datePickerContainer}>
-                        <Text >Birthday</Text>
+                        <Text>Birthday</Text>
                         <TextInput
                             mode="outlined"
                             label="format : 20230731"
-                            placeholder='format : 20230731'
+                            placeholder="format : 20230731"
                             value={birthday}
                             onChangeText={handleDateChange}
                             style={styles.inputField}
                             keyboardType="numeric"
                         />
                     </View>
-                    <Text >Position</Text>
 
-                    <SelectDropdown
+                    <Text>Position</Text>
+
+                    {/* Use CustomSelectDropdown for position */}
+                    <CustomSelectDropdown
                         data={positionData}
-                        onSelect={(selectedItem, index) => {
-                            setPosition(selectedItem.value);
-                        }}
-                        buttonTextAfterSelection={(selectedItem, index) => {
-                            return selectedItem.label;
-                        }}
-                        rowTextForSelection={(item, index) => {
-                            return item.label;
-                        }}
-                        buttonStyle={{
-                            width: '100%',
-                            height: 50,
-                            borderColor: '#c4c4c4',
-                            borderWidth: 1,
-                            borderRadius: 5,
-                            justifyContent: 'flex-start',
-                            paddingHorizontal: 10,
-                            backgroundColor: '#fff',
-                            marginTop: 10,
-                            marginBottom: 10,
-                        }}
-                        buttonTextStyle={{ textAlign: 'center', color: '#000000' }}
-                        dropdownStyle={{ marginTop: -30, borderColor: '#c4c4c4', borderWidth: 1, borderRadius: 5, backgroundColor: '#fff' }}
-                        defaultButtonText={position || "Select position"}
+                        selectedItem={position || 'Select position'}
+                        setSelectedItem={(item) => setPosition(item as PositionType)}
+                        getItemLabel={(item) => item}
                     />
+
                     <HelperText type="error" visible={password !== confirmPassword}>
                         Passwords do not match
                     </HelperText>
-                    <HelperText type="error" visible={birthday.length != 8}>
+                    <HelperText type="error" visible={birthday.length !== 8}>
                         Birthday must be eight digits.
                     </HelperText>
                     <HelperText type="error" visible={password.length < 6}>
                         Password must be at least 6 characters.
                     </HelperText>
-                    <Button mode="contained" onPress={signupHandler} loading={isLoading} disabled={isLoading || !email || password.length < 6 || !password || !confirmPassword || !sex || !position || birthday.length != 8}>Sign Up</Button>
+
+                    <Button
+                        mode="contained"
+                        onPress={signupHandler}
+                        loading={isLoading}
+                        disabled={isLoading || !email || password.length < 6 || !password || !confirmPassword || !sex || !position || birthday.length !== 8}
+                    >
+                        Sign Up
+                    </Button>
+
                     <Text
                         onPress={() => navigation.replace('LoginScreen')}
                         style={{ textDecorationLine: 'underline', fontSize: 14, textAlign: 'center', marginTop: 20 }}
@@ -210,6 +164,7 @@ const SignupScreen = ({ navigation }: { navigation: SignupScreenNavigationProp }
                         Already have an account? Log in!
                     </Text>
                 </View>
+
                 <Snackbar
                     visible={visible}
                     onDismiss={() => setVisible(false)}
@@ -217,7 +172,6 @@ const SignupScreen = ({ navigation }: { navigation: SignupScreenNavigationProp }
                     {errorMessage}
                 </Snackbar>
             </View>
-            {/* </TouchableWithoutFeedback> */}
         </KeyboardAwareScrollView>
     );
 };
@@ -230,7 +184,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         width: '100%',
         maxWidth: 1000,
-        alignSelf: 'center'
+        alignSelf: 'center',
     },
     inputContainer: {
         width: '95%',
@@ -241,15 +195,7 @@ const styles = StyleSheet.create({
     datePickerContainer: {
         marginBottom: 10,
         height: 70,
-        width: '100%'
-    },
-    dropDownPicker: {
-        marginBottom: 10,
-        marginTop: 5,
-    },
-    datePicker: {
-        flex: 1,
-        alignSelf: 'center',
+        width: '100%',
     },
 });
 
