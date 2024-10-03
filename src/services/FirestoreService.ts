@@ -176,7 +176,7 @@ export const initializePreferences = async (): Promise<void> => {
 
     await setDoc(doc(db, 'Preferences', userId), {
       commonWords: "",
-      gptModel: "gpt-3.5-turbo",
+      gptModel: "gpt-4o-mini",
       defaultPrompt: ""
     });
   } catch (error) {
