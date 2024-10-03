@@ -107,19 +107,40 @@ export const uploadDataToFirestore = async (
   lastEdited: Date
 ) => {
   try {
-    const userId = auth.currentUser?.uid
+    const userId = auth.currentUser?.uid;
 
     if (!userId) {
       throw new Error('User not authenticated, please log in again');
     }
 
-    // add or update record
-    await setDoc(doc(db, 'PatientRecords', userId, 'PatientRecord', patientId), {
+    // Get the existing document from Firestore
+    const docRef = doc(db, 'PatientRecords', userId, 'PatientRecord', patientId);
+    const docSnap = await getDoc(docRef);
+
+    // If the document exists, compare its data with the new data
+    if (docSnap.exists()) {
+      const existingData = docSnap.data();
+
+      // Compare the current values with the ones in Firestore
+      const isPatientInfoChanged = existingData.patientInfo !== patientInfo;
+      const isAsrResponseChanged = existingData.asrResponse !== asrResponse;
+      const isGptResponseChanged = existingData.gptResponse !== gptResponse;
+
+      // If none of the values changed, return early without updating `lastEdited`
+      if (!isPatientInfoChanged && !isAsrResponseChanged && !isGptResponseChanged) {
+        // console.log('No changes detected, skipping update.');
+        return;
+      }
+    }
+
+    // If there's no existing document, or if changes are detected, update Firestore
+    await setDoc(docRef, {
       patientInfo,
       asrResponse,
       gptResponse,
-      lastEdited 
+      lastEdited
     });
+
   } catch (error) {
     handleFirestoreError(error as FirebaseError);
     throw error; // re-throw the error after handling it
