@@ -148,7 +148,8 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
 
     useEffect(() => {
         if (!isLoading) { // Only save to AsyncStorage if not loading data
-            uploadDataToFirestore(patientId, patientInfo, asrResponse, gptResponse)
+            const currentDate = new Date(); // get local date
+            uploadDataToFirestore(patientId, patientInfo, asrResponse, gptResponse, currentDate)
         }
     }, [patientInfo, asrResponse, gptResponse, patientId]); // Add isLoadingData to dependencies
 

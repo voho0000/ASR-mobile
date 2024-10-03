@@ -1,6 +1,6 @@
 // HomeScreen.tsx
 import React, { useEffect, useState } from 'react';
-import { View, FlatList, StyleSheet, Platform } from 'react-native';
+import { Text, View, FlatList, StyleSheet, Platform } from 'react-native';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
@@ -19,7 +19,7 @@ type HomeScreenNavigationProp = NativeStackNavigationProp<
 
 const HomeScreen = () => {
     const [isLoading, setIsLoading] = useState(true);
-    const [items, setItems] = useState<{ id: string, info: string }[]>([]);
+    const [items, setItems] = useState<{ id: string, info: string, lastEdited?: Date }[]>([]);
     const navigation = useNavigation<HomeScreenNavigationProp>();
     const isFocused = useIsFocused();
     const [visible, setVisible] = useState(false); // State for Dialog visibility
@@ -47,9 +47,7 @@ const HomeScreen = () => {
     const [isEditNameWithinLimit, setIsEditNameWithinLimit] = useState(true);
 
     const [isRenaming, setIsRenaming] = useState(false); // New state for renaming spinner
-
     const [isDeleting, setIsDeleting] = useState(false); // New state for delete spinner
-
     const [isAdding, setIsAdding] = useState(false);
 
 
@@ -58,7 +56,12 @@ const HomeScreen = () => {
             try {
                 const response = await fetchPatientRecords();
                 if (response) {
-                    setItems(response); // Assuming response is an array of items
+                    // Sort items by lastEdited (newest to oldest)
+                    const sortedItems = response.sort((a, b) => {
+                        if (!a.lastEdited) { return 1; }; // 如果 a 沒有 lastEdited，排在後面
+                        if (!b.lastEdited) { return -1; };// 如果 b 沒有 lastEdited，排在前面
+                        return b.lastEdited.getTime() - a.lastEdited.getTime(); // 否則按時間排序
+                    }); setItems(sortedItems);
                 }
             } catch (error) {
                 console.log('Error fetching patient records:', error);
@@ -72,12 +75,20 @@ const HomeScreen = () => {
         }
     }, [isFocused]);
 
+    // Handle adding a new patient and updating items
     const handleAddPatient = async () => {
         setIsAdding(true);
         try {
-            await addPatientRecord(inputValue);
-            const newItems = [...items, { id: inputValue, info: '' }];
-            setItems(newItems);
+            const currentDate = new Date(); // Get local date
+            await addPatientRecord(inputValue, currentDate);
+            const newItems = [...items, { id: inputValue, info: '', lastEdited: currentDate }];
+            // Sort after adding
+            const sortedItems = newItems.sort((a, b) => {
+                if (!a.lastEdited) { return 1 };
+                if (!b.lastEdited) { return -1 };
+                return b.lastEdited.getTime() - a.lastEdited.getTime();
+            });
+            setItems(sortedItems);
             navigation.navigate('RecordingScreen', { name: inputValue });
         } catch (error) {
             console.error("Error adding patient:", error);
@@ -117,11 +128,12 @@ const HomeScreen = () => {
         setEditDialogVisible(true);
     };
 
+    // Handle renaming a patient and updating items
     const handleEditPatient = async () => {
         const nameExists = items.some((item, idx) => item.id === editedValue && idx !== editIndex);
         if (nameExists) {
             setIsEditValid(false);
-            return; // don't proceed if the name is not unique
+            return; // Don't proceed if the name is not unique
         }
 
         if (editIndex !== null) {
@@ -129,11 +141,18 @@ const HomeScreen = () => {
             try {
                 const oldPatientId = items[editIndex].id;
                 const newPatientId = editedValue;
-                await renamePatientId(oldPatientId, newPatientId);
+                const currentDate = new Date(); // Get local date
+                await renamePatientId(oldPatientId, newPatientId, currentDate);
 
                 const newItems = [...items];
-                newItems[editIndex].id = editedValue;
-                setItems(newItems);
+                newItems[editIndex] = { ...newItems[editIndex], id: newPatientId, lastEdited: currentDate };
+                // Sort after renaming
+                const sortedItems = newItems.sort((a, b) => {
+                    if (!a.lastEdited) { return 1 };
+                    if (!b.lastEdited) { return -1 };
+                    return b.lastEdited.getTime() - a.lastEdited.getTime();
+                });
+                setItems(sortedItems);
             } catch (error) {
                 console.error("Error renaming patient:", error);
             } finally {
@@ -200,11 +219,40 @@ const HomeScreen = () => {
                     keyExtractor={(item, index) => index.toString()}
                     renderItem={({ item, index }) => (
                         <List.Item
-                            title={item.id}
-                            description={item.info}
-                            descriptionNumberOfLines={2} // limit the number of lines for description
-                            descriptionStyle={{ fontSize: 12, overflow: 'hidden' }} // hide overflowing text
-                            style={{ paddingVertical: 0 }} // enforce a consistent height and remove vertical padding
+                        style={{ paddingVertical: 0, minHeight: 65 }} // Ensure the row has a consistent height
+                        title={() => (
+                            <View style={{ flexDirection: 'column', justifyContent: 'flex-start' }}>
+                                {/* Title section with fixed space at the top */}
+                                <View style={{ minHeight: 20 }}> {/* Fixed space for the title */}
+                                    <Text style={{ fontWeight: 'bold', fontSize: 16 }}>
+                                        {item.id}
+                                    </Text>
+                                </View>
+                            </View>
+                        )}
+                        description={() => (
+                            <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginTop: 5 }}>
+                                {/* Left side: Last edited with fixed width */}
+                                <View style={{ width: 70 }}> {/* Fixed width for date */}
+                                    <Text
+                                        style={{ fontSize: 12, color: '#6b6b6b', overflow: 'hidden' }}
+                                        numberOfLines={1} // Limit to one line for the date
+                                    >
+                                        {item.lastEdited ? new Date(item.lastEdited).toLocaleDateString() : ''}
+                                    </Text>
+                                </View>
+            
+                                {/* Right side: Patient info */}
+                                <View style={{ flex: 1, marginLeft: 10 }}>
+                                    <Text
+                                        style={{ fontSize: 12, color: '#6b6b6b', overflow: 'hidden', textAlign: 'left' }}
+                                        numberOfLines={2} // Limit to two lines for patient info
+                                    >
+                                        {item.info ? item.info+'\n' : '\n'}
+                                    </Text>
+                                </View>
+                            </View>
+                        )}
                             onPress={() => handlePressItem(item.id)}
                             right={props =>
                             (

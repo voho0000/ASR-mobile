@@ -54,8 +54,7 @@ const handleFirestoreError = (error: any) => {
 
 
 
-export const fetchPatientRecords = async (): Promise<{id: string, info: string}[]> => {
-
+export const fetchPatientRecords = async (): Promise<{ id: string, info: string, lastEdited?: Date }[]> => {
   try {
     const userId = auth.currentUser?.uid;
 
@@ -66,16 +65,20 @@ export const fetchPatientRecords = async (): Promise<{id: string, info: string}[
     const patientRecordsRef = collection(db, 'PatientRecords', userId, 'PatientRecord');
     const patientRecordsSnap = await getDocs(patientRecordsRef);
 
-    // return patientRecordsSnap.docs.map(doc => doc.id);
-    return patientRecordsSnap.docs.map(doc => ({id: doc.id, info: doc.data().patientInfo}));
-
+    // Ensure each record includes lastEdited (if it exists)
+    return patientRecordsSnap.docs.map(doc => ({
+      id: doc.id,
+      info: doc.data().patientInfo,
+      lastEdited: doc.data().lastEdited ? doc.data().lastEdited.toDate() : undefined  // Use undefined for missing lastEdited
+    }));
   } catch (error) {
     handleFirestoreError(error as FirebaseError);
-    throw error; // re-throw the error after handling it
+    throw error;
   }
 };
 
-export const addPatientRecord = async (patientId: string): Promise<void> => {
+export const addPatientRecord = async (patientId: string,
+  lastEdited: Date): Promise<void> => {
   try {
     const userId = auth.currentUser?.uid;
 
@@ -86,7 +89,8 @@ export const addPatientRecord = async (patientId: string): Promise<void> => {
     await setDoc(doc(db, 'PatientRecords', userId, 'PatientRecord', patientId), {
       asrResponse: "",
       gptResponse: "",
-      patientInfo: ""
+      patientInfo: "",
+      lastEdited 
     });
   } catch (error) {
     handleFirestoreError(error as FirebaseError);
@@ -99,7 +103,8 @@ export const uploadDataToFirestore = async (
   patientId: string,
   patientInfo: string,
   asrResponse: string,
-  gptResponse: string
+  gptResponse: string,
+  lastEdited: Date
 ) => {
   try {
     const userId = auth.currentUser?.uid
@@ -113,6 +118,7 @@ export const uploadDataToFirestore = async (
       patientInfo,
       asrResponse,
       gptResponse,
+      lastEdited 
     });
   } catch (error) {
     handleFirestoreError(error as FirebaseError);
@@ -394,7 +400,8 @@ export const deletePrompt = async (promptName: string): Promise<void> => {
 
 export const renamePatientId = async (
   oldPatientId: string,
-  newPatientId: string
+  newPatientId: string,
+  lastEdited: Date
 ) => {
   try {
     if (oldPatientId === newPatientId) {
@@ -412,7 +419,6 @@ export const renamePatientId = async (
 
     if (docSnap.exists()) {
       // Data exists for the oldPatientId
-
       const patientData = docSnap.data();
 
       if (oldPatientId !== newPatientId) {
@@ -420,8 +426,11 @@ export const renamePatientId = async (
         await deleteDoc(docRef);
       }
 
-      // add or update new record
-      await setDoc(doc(db, 'PatientRecords', userId, 'PatientRecord', newPatientId), patientData);
+      // add or update new record, ensuring lastEdited is overwritten with the new value
+      await setDoc(doc(db, 'PatientRecords', userId, 'PatientRecord', newPatientId), {
+        ...patientData,    // Retain the existing data
+        lastEdited         // Overwrite the lastEdited field with the new value
+      });
     } else {
       console.error(`No data found for patient with ID: ${oldPatientId}`);
     }
