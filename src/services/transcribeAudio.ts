@@ -21,7 +21,8 @@ export const transcribeAudio = async (audioInput: string | Blob): Promise<string
 
     if (audioInput instanceof Blob) {
         // 如果是 Blob（網頁版）
-        data.append('file', audioInput, 'recording.mp3');
+        const extension = audioInput.type.includes('mp4') ? 'm4a' : 'webm';
+        data.append('file', audioInput, `recording.${extension}`);
     } else {
         // 如果是 URI（App 版）
         const file = { uri: audioInput, name: 'recording.m4a', type: 'audio/m4a' };

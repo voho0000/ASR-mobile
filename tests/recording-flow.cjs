@@ -17,9 +17,10 @@ const firestore = {
  uploadDataToFirestore:async(...args)=>{uploads.push(args)},
 };
 class Recorder {
- async start() {}
- stop() { stops++; if(stopFails)throw Error('Synthetic stop failure'); return {getMp3: async()=>[[],new Blob(['synthetic'])]}; }
+ async stop() { stops++; if(stopFails)throw Error('Synthetic stop failure'); return new Blob(['synthetic'],{type:'audio/webm'}); }
+ cancel() {}
 }
+
 let hook;
 function load(file, extra={}) {
  const code=ts.transpileModule(fs.readFileSync(file,'utf8'), {compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX,esModuleInterop:true}}).outputText;
@@ -29,7 +30,7 @@ function load(file, extra={}) {
   if(n==='react-native')return native;
   if(n==='react-native-paper')return paper;
   if(n==='react-native-toast-message')return {show:()=>{}};
-  if(n==='mic-recorder-to-mp3')return Recorder;
+  if(n==='./webRecording')return {startWebRecording:async()=>new Recorder()};
   if(n==='expo-status-bar')return {StatusBar:component('StatusBar')};
   if(n==='expo-av')return {Audio:{}};
   if(n==='./transcribeAudio')return {transcribeAudio:async()=>{transcribes++;if(apiFails)throw Error('Synthetic API failure');return 'New transcript'}};

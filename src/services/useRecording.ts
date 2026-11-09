@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-// @ts-ignore
-import Mp3Recorder from 'mic-recorder-to-mp3';  // 引入 mic-recorder-to-mp3
+import { startWebRecording } from './webRecording';
 import { transcribeAudio } from './transcribeAudio';
 import Toast from 'react-native-toast-message';
 import { Platform } from 'react-native';
@@ -10,7 +9,9 @@ export const useRecording = () => {
   const [isRecording, setIsRecording] = useState<boolean>(false);
   const [isPaused, setIsPaused] = useState<boolean>(false);
   const [counter, setCounter] = useState<number>(0);
-  const [mp3Recorder] = useState(new Mp3Recorder({ bitRate: 128 }));
+  const webRecording = useRef<Awaited<ReturnType<typeof startWebRecording>> | null>(null);
+  const mounted = useRef(true);
+  const starting = useRef(false);
   const activeRecording = useRef(false);
   const nativeRecording = useRef<Audio.Recording | null>(null);
   const lastBlobURL = useRef<string | null>(null);
@@ -20,15 +21,15 @@ export const useRecording = () => {
     if (lastBlobURL.current) URL.revokeObjectURL(lastBlobURL.current);
   }, []);
 
-  useEffect(() => () => {
-    if (!activeRecording.current) return;
-    activeRecording.current = false;
-    if (Platform.OS === 'web') {
-      mp3Recorder.stop();
-    } else {
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      activeRecording.current = false;
+      webRecording.current?.cancel();
       void nativeRecording.current?.stopAndUnloadAsync().catch(() => {});
-    }
-  }, [mp3Recorder]);
+    };
+  }, []);
 
   useEffect(() => {
     let interval: ReturnType<typeof setInterval> | null = null;
@@ -44,10 +45,16 @@ export const useRecording = () => {
 
   // 開始錄音
   const startRecording = async () => {
+    if (starting.current || activeRecording.current) return;
+    starting.current = true;
     try {
       if (Platform.OS === 'web') {
-        // 如果是在 Web 上，使用 mic-recorder-to-mp3
-        await mp3Recorder.start();
+        const capture = await startWebRecording();
+        if (!mounted.current) {
+          capture.cancel();
+          return;
+        }
+        webRecording.current = capture;
       } else {
         // 在 iOS/Android 應用中，使用 Expo 的錄音 API
         const { status } = await Audio.requestPermissionsAsync();
@@ -80,37 +87,10 @@ export const useRecording = () => {
     } catch (error) {
       console.error('Failed to start recording:', error);
       showToast('Failed to start recording.', 'error');
+    } finally {
+      starting.current = false;
     }
   };
-
-  // // 暫停錄音
-  // const pauseRecording = async () => {
-  //   if (Platform.OS === 'web') {
-  //     try {
-  //       await mp3Recorder.pause();
-  //       setIsPaused(true);
-  //     } catch (error) {
-  //       console.error('Failed to pause web recording:', error);
-  //       showToast('Failed to pause recording. Please try again.', 'error');
-  //     }
-  //   } else {
-  //     try {
-  //       await recording?.pauseAsync();
-  //       setIsPaused(true);
-  //     } catch (error) {
-  //       console.error('Failed to pause app recording:', error);
-  //       Toast.show({
-  //         type: 'error',
-  //         position: 'top',
-  //         text1: 'Error',
-  //         text2: 'Failed to pause recording. Please try again',
-  //         visibilityTime: 2000,
-  //         autoHide: true,
-  //         bottomOffset: 40,
-  //       });      }
-  //   }
-  // };
-
 
 // 停止錄音
 const stopRecording = async (shouldShowToast: boolean = true) => {
@@ -121,7 +101,11 @@ const stopRecording = async (shouldShowToast: boolean = true) => {
   setCounter(0);
   if (Platform.OS === 'web') {
     try {
-      const [buffer, blob] = await mp3Recorder.stop().getMp3();
+      const capture = webRecording.current;
+      webRecording.current = null;
+      if (!capture) return;
+      const blob = await capture.stop();
+      if (!mounted.current) return;
       const blobURL = URL.createObjectURL(blob);
       if (lastBlobURL.current) URL.revokeObjectURL(lastBlobURL.current);
       lastBlobURL.current = blobURL;

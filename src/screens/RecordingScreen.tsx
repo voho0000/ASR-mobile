@@ -210,7 +210,7 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
                                 />
                             ) : (
                                 <IconButton
-                                    onPress={startRecording}
+                                    onPress={() => { if (!isTranscriptLoading) void startRecording(); }}
                                     iconName="microphone"
                                 />
                             )}
@@ -230,7 +230,7 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
                     </View>
                     {Platform.OS === 'web' && blobURL && (
                         <View style={{ marginVertical: 10 }}>
-                            <Text>Last recording (available until you leave this page)</Text>
+                            <Text>Last available recording (until the next recording or leaving this page)</Text>
                             <audio controls src={blobURL} style={{ width: '100%' }} />
                         </View>
                     )}
