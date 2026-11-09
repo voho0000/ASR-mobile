@@ -42,10 +42,12 @@ export const transcribeAudio = async (audioInput: string | Blob): Promise<string
             return converter(jsonResponse['transcript']);// 返回轉錄的文本
         } else {
             console.error('Transcription request failed:', response.status);
-            throw new Error('Failed to transcribe audio');
+            throw new Error(jsonResponse?.code === 'NO_SPEECH'
+                ? 'No speech was recognized. Check the microphone input and try again.'
+                : 'Failed to transcribe audio. Please try again.');
         }
     } catch (error) {
         console.error('Error during transcription:', error);
-        throw new Error('Error occurred while transcribing');
+        throw error;
     }
 };

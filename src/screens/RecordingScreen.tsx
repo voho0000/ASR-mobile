@@ -102,7 +102,11 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
             }
         } catch (error) {
             console.error("Failed to get response from GPT:", error);
-            Alert.alert("Error", "Failed to get response from GPT. Please try again.");
+            Toast.show({
+                type: "error",
+                text1: "Error",
+                text2: "Failed to get response from GPT. Please try again.",
+            });
         }
         setIsLoadingGpt(false);
     };

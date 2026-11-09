@@ -6,7 +6,7 @@ const React = require('react');
 const renderer = require('react-test-renderer');
 const ts = require('typescript');
 const source = path.resolve(__dirname, '..');
-let stops = 0, uploads = [], transcribes = 0, apiFails = false;
+let stops = 0, uploads = [], transcribes = 0, apiFails = false, stopFails = false;
 const component = name => props => React.createElement(name, props, props.children);
 const native = new Proxy({StyleSheet:{create:s=>s},Platform: {OS:'web'}, Dimensions:{get:()=>({height:900})}, Alert:{alert:()=>{}}, Keyboard:{dismiss:()=>{}}}, {get:(t,k)=> t[k] || component(k)});
 const paper = new Proxy({}, {get:(t,k)=>component(k)});
@@ -18,7 +18,7 @@ const firestore = {
 };
 class Recorder {
  async start() {}
- stop() { stops++; return {getMp3: async()=>[[],new Blob(['synthetic'])]}; }
+ stop() { stops++; if(stopFails)throw Error('Synthetic stop failure'); return {getMp3: async()=>[[],new Blob(['synthetic'])]}; }
 }
 let hook;
 function load(file, extra={}) {
@@ -42,8 +42,8 @@ function load(file, extra={}) {
  }};
  vm.runInNewContext(code,sandbox,{filename:file});return sandbox.exports;
 }
-async function scenario(fails) {
- stops=0;transcribes=0;uploads=[];apiFails=fails;
+async function scenario(fails, failsToStop=false) {
+ stops=0;transcribes=0;uploads=[];apiFails=fails;stopFails=failsToStop;
  hook=load(path.join(source,'src/services/useRecording.ts'));
  const Screen=load(path.join(source,'src/screens/RecordingScreen.tsx')).default;
  let root;
@@ -52,15 +52,18 @@ async function scenario(fails) {
  await renderer.act(async()=>{await findIcon('microphone').props.onPress();});
  await renderer.act(async()=>{await findIcon('stop').props.onPress();});
  const result=root.root.findAll(n=>n.type==='TextInput'&&n.props.placeholder==='Start recording to get ASR result')[0].props.value;
+ const canRecordAgain = !!findIcon("microphone");
  await renderer.act(async()=>root.unmount());
- return {fails,stops,transcribes,result,unexpectedWrites:uploads.some(a=>String(a[2]).includes('undefined'))};
+ return {fails,stops,transcribes,result,canRecordAgain,unexpectedWrites:uploads.some(a=>String(a[2]).includes('undefined'))};
 }
 (async()=>{
- const success=await scenario(false),failure=await scenario(true);
- console.log(JSON.stringify({source,success,failure},null,2));
+ const success=await scenario(false),failure=await scenario(true),stopFailure=await scenario(false,true);
+ console.log(JSON.stringify({source,success,failure,stopFailure},null,2));
  assert.equal(success.stops,1,'Stopping one recording must stop the recorder exactly once');
  assert.equal(success.transcribes,1,'Stopping one recording must upload exactly once');
  assert.equal(success.result,'Existing text New transcript');
  assert.equal(failure.result,'Existing text','A failed transcript must preserve existing text');
+ assert.equal(stopFailure.canRecordAgain,true,'Failed stop must return to the microphone button');
+ assert.equal(stopFailure.transcribes,0,'Failed encoding must not upload');
  assert.equal(failure.unexpectedWrites,false,'Do not persist undefined after a failed transcript');
 })().catch(e=>{console.error(e.message);process.exitCode=1});

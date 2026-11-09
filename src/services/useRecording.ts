@@ -111,6 +111,9 @@ export const useRecording = () => {
 const stopRecording = async (shouldShowToast: boolean = true) => {
   if (!activeRecording.current) return;
   activeRecording.current = false;
+  setIsRecording(false);
+  setIsPaused(false);
+  setCounter(0);
   if (Platform.OS === 'web') {
     try {
       const [buffer, blob] = await mp3Recorder.stop().getMp3();
@@ -130,7 +133,7 @@ const stopRecording = async (shouldShowToast: boolean = true) => {
         } catch (error) {
           console.error('Failed to transcribe audio:', error);
           if (shouldShowToast) {
-            showToast('Failed to transcribe audio. Please try again.');
+            showToast(error instanceof Error ? error.message : 'Failed to transcribe audio. Please try again.');
           }        }
       }
     } catch (error) {
@@ -158,7 +161,7 @@ const stopRecording = async (shouldShowToast: boolean = true) => {
         } catch (error) {
           console.error('Failed to transcribe audio:', error);
           if (shouldShowToast) {
-            showToast('Failed to transcribe audio. Please try again.');
+            showToast(error instanceof Error ? error.message : 'Failed to transcribe audio. Please try again.');
           }        
         }
       }
