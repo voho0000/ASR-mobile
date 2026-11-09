@@ -1,3 +1,4 @@
+import MicrophoneLevel from '../components/MicrophoneLevel';
 // RecordingScreen.tsx
 import { useState, useEffect } from 'react';
 import { StyleSheet, View, ScrollView, Alert, TouchableWithoutFeedback, Keyboard, Dimensions, Platform, Modal } from 'react-native';
@@ -77,8 +78,7 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
         startRecording,
         stopRecording,
         blobURL,
-        microphones, selectedMicrophoneId, setSelectedMicrophoneId,
-        refreshMicrophones, inputLabel,
+        inputLabel, inputLevel,
     } = useRecording();
 
     const sendToGPT = async () => {
@@ -200,27 +200,6 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
                         value={patientInfo}
                         scrollEnabled
                     />
-                    {Platform.OS === 'web' && (
-                        <View style={{ marginVertical: 10 }}>
-                            <Text>Microphone</Text>
-                            <select aria-label="Microphone" value={selectedMicrophoneId}
-                                disabled={isRecording || isTranscriptLoading}
-                                onChange={event => setSelectedMicrophoneId(event.target.value)}
-                                style={{ width: '100%', padding: 10 }}>
-                                <option value="">Use browser default microphone</option>
-                                {microphones.map((device, index) => (
-                                    <option key={device.deviceId} value={device.deviceId}>
-                                        {device.label || `Microphone ${index + 1}`}
-                                    </option>
-                                ))}
-                            </select>
-                            <Button onPress={refreshMicrophones}
-                                disabled={isRecording || isTranscriptLoading}>
-                                Refresh microphones
-                            </Button>
-                            {inputLabel !== '' && <Text>Recording input: {inputLabel}</Text>}
-                        </View>
-                    )}
                     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', paddingRight: 20 }}>
                         <View style={{
                             justifyContent: 'center', flex: 0.2, flexDirection: 'row',
@@ -251,6 +230,9 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
                             />
                         </View>
                     </View>
+                    {Platform.OS === 'web' && (
+                        <MicrophoneLevel level={inputLevel} recording={isRecording} inputLabel={inputLabel} />
+                    )}
                     {Platform.OS === 'web' && blobURL && (
                         <View style={{ marginVertical: 10 }}>
                             <Text>Last available recording (until the next recording or leaving this page)</Text>

@@ -1,6 +1,7 @@
+import { readMicrophonePreference, saveMicrophonePreference } from '../services/microphonePreference';
 import { models } from '../services/models';
 import { useState, useEffect } from 'react';
-import { View, StyleSheet, Keyboard, Dimensions } from 'react-native';
+import { View, StyleSheet, Keyboard, Dimensions, Platform } from 'react-native';
 import { TextInput, Button, Paragraph, List, Divider, Text, ActivityIndicator } from 'react-native-paper';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { updatePreference, fetchPreferences, fetchPrompts } from '../services/FirestoreService';
@@ -31,6 +32,8 @@ const PreferenceScreen = ({ navigation }: { navigation: PreferenceNavigationProp
     const [commonWords, setCommonWords] = useState<string>('');
     const [selectPrompt, setSelectPrompt] = useState<string>('');
     const [prompts, setPrompts] = useState<Prompt[]>([]);
+    const [microphone, setMicrophone] = useState(readMicrophonePreference);
+    const [microphones, setMicrophones] = useState<MediaDeviceInfo[]>([]);
 
 
 
@@ -38,9 +41,27 @@ const PreferenceScreen = ({ navigation }: { navigation: PreferenceNavigationProp
 
     const formattedPrompts = prompts.map(prompt => prompt.name);
 
+    const loadMicrophones = async () => {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        setMicrophones(devices.filter(device => device.kind === 'audioinput' && device.deviceId && device.label));
+    };
+    const refreshMicrophones = async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            try { await loadMicrophones(); }
+            finally { stream.getTracks().forEach(track => track.stop()); }
+        } catch {
+            Toast.show({ type: 'error', text1: 'Microphone', text2: 'Allow microphone access to show available inputs.' });
+        }
+    };
+    useEffect(() => {
+        if (Platform.OS === 'web') void loadMicrophones().catch(() => {});
+    }, []);
+
     const savePreferences = async () => {
         try {
-            await updatePreference(commonWords, selectedModel.value, selectPrompt);  // Update to use selectedModel.value
+            await updatePreference(commonWords, selectedModel.value, selectPrompt);
+            if (Platform.OS === 'web') saveMicrophonePreference(microphone);  // Update to use selectedModel.value
             Toast.show({
                 type: 'success',
                 position: 'top',
@@ -53,6 +74,7 @@ const PreferenceScreen = ({ navigation }: { navigation: PreferenceNavigationProp
             navigation.goBack();
         } catch (error) {
             console.error('Failed to save preferences:', error);
+            Toast.show({ type: 'error', text1: 'Error', text2: 'Failed to save preferences. Please try again.' });
         }
     };
 
@@ -89,6 +111,30 @@ const PreferenceScreen = ({ navigation }: { navigation: PreferenceNavigationProp
 
     return (
         <KeyboardAwareScrollView contentContainerStyle={styles.container}>
+            {Platform.OS === 'web' && (
+                <List.Section>
+                    <Text style={{ fontWeight: 'bold' }}>Microphone</Text>
+                    <Paragraph>Select the recording input for this browser.</Paragraph>
+                    <select aria-label="Microphone" value={microphone.deviceId}
+                        style={{ width: '100%', minHeight: 44, padding: 10 }}
+                        onChange={event => {
+                            const id = event.target.value;
+                            const device = microphones.find(item => item.deviceId === id);
+                            if (!id) setMicrophone({ deviceId: '', label: 'Use browser default microphone' });
+                            else if (device) setMicrophone({ deviceId: id, label: device.label });
+                        }}>
+                        <option value="">Use browser default microphone</option>
+                        {microphone.deviceId && !microphones.some(item => item.deviceId === microphone.deviceId) && (
+                            <option value={microphone.deviceId}>{microphone.label}</option>
+                        )}
+                        {microphones.map(device => (
+                            <option key={device.deviceId} value={device.deviceId}>{device.label}</option>
+                        ))}
+                    </select>
+                    <Button onPress={refreshMicrophones} contentStyle={{ minHeight: 44 }}>Refresh microphones</Button>
+                </List.Section>
+            )}
+
             <List.Section style={styles.commonWordContainer}>
                 <Text style={{ fontWeight: 'bold' }}>Speech Recognition</Text>
                 <Paragraph style={styles.helperText}>

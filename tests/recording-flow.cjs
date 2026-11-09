@@ -6,10 +6,13 @@ const React = require('react');
 const renderer = require('react-test-renderer');
 const ts = require('typescript');
 const source = path.resolve(__dirname, '..');
+const savedMicrophone = JSON.stringify({deviceId:'physical-test-id',label:'Synthetic physical microphone'});
+const storage = new Map([['asr.microphone',savedMicrophone]]);
+const localStorage = {getItem:key=>storage.get(key)||null,setItem:(key,value)=>storage.set(key,value)};
 let stops = 0, uploads = [], transcribes = 0, apiFails = false, stopFails = false, requestedDevice = '';
 const component = name => props => React.createElement(name, props, props.children);
 const native = new Proxy({StyleSheet:{create:s=>s},Platform: {OS:'web'}, Dimensions:{get:()=>({height:900})}, Alert:{alert:()=>{}}, Keyboard:{dismiss:()=>{}}}, {get:(t,k)=> t[k] || component(k)});
-const paper = new Proxy({}, {get:(t,k)=>component(k)});
+const paper = new Proxy({useTheme:()=>({colors:{primary:'#6750A4',surfaceVariant:'#ddd'}})}, {get:(t,k)=>t[k] || component(k)});
 const firestore = {
  fetchPreferences: async()=>({gptModel:'gpt-6-luna',defaultPrompt:''}),
  fetchSinglePatientRecord:async()=>({asrResponse:'Existing text',gptResponse:'',patientInfo:''}),
@@ -17,23 +20,26 @@ const firestore = {
  uploadDataToFirestore:async(...args)=>{uploads.push(args)},
 };
 class Recorder {
+ constructor(onLevel){this.onLevel=onLevel;}
  deviceLabel='Synthetic physical microphone';
- async stop() { stops++; if(stopFails)throw Error('Synthetic stop failure'); return new Blob(['synthetic'],{type:'audio/webm'}); }
+ async stop() { this.onLevel?.(0);stops++; if(stopFails)throw Error('Synthetic stop failure'); return new Blob(['synthetic'],{type:'audio/webm'}); }
  cancel() {}
 }
 
 let hook;
 function load(file, extra={}) {
  const code=ts.transpileModule(fs.readFileSync(file,'utf8'), {compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX,esModuleInterop:true}}).outputText;
- const sandbox={exports:{},navigator:{mediaDevices:{enumerateDevices:async()=>[{kind:'audioinput',deviceId:'physical-test-id',label:'Synthetic physical microphone'}]}},console:{log:()=>{},error:()=>{}},Blob,URL,setInterval,clearInterval,require:n=> {
+ const sandbox={exports:{},localStorage,navigator:{mediaDevices:{enumerateDevices:async()=>[{kind:'audioinput',deviceId:'physical-test-id',label:'Synthetic physical microphone'}]}},console:{log:()=>{},error:()=>{}},Blob,URL,setInterval,clearInterval,require:n=> {
   if(n in extra)return extra[n];
   if(n==='react' || n==='react/jsx-runtime')return require(n);
   if(n==='react-native')return native;
   if(n==='react-native-paper')return paper;
   if(n==='react-native-toast-message')return {show:()=>{}};
-  if(n==='./webRecording')return {startWebRecording:async device=>{requestedDevice=device;return new Recorder()}};
+  if(n==='./webRecording')return {startWebRecording:async options=>{requestedDevice=options.deviceId;options.onLevel(35);return new Recorder(options.onLevel)}};
   if(n==='expo-status-bar')return {StatusBar:component('StatusBar')};
   if(n==='expo-av')return {Audio:{}};
+  if(n==='./microphonePreference')return load(path.join(source,'src/services/microphonePreference.ts'));
+  if(n.endsWith('/MicrophoneLevel'))return load(path.join(source,'src/components/MicrophoneLevel.tsx'));
   if(n==='./transcribeAudio')return {transcribeAudio:async()=>{transcribes++;if(apiFails)throw Error('Synthetic API failure');return 'New transcript'}};
   if(n.endsWith('/FirestoreService'))return firestore;
   if(n==='react-native-keyboard-aware-scroll-view')return {KeyboardAwareScrollView:component('ScrollView')};
@@ -51,19 +57,22 @@ async function scenario(fails, failsToStop=false) {
  let root;
  await renderer.act(async()=>{root=renderer.create(React.createElement(Screen,{route:{params:{name:'SYNTHETIC-ONLY'}}}));});
  const findIcon=name=>root.root.findAll(n=>n.type==='button'&&n.props.iconName===name)[0];
- await renderer.act(async()=>{root.root.findByType('select').props.onChange({target:{value:'physical-test-id'}});});
+ assert.equal(root.root.findAll(n=>n.type==='select').length,0,'Recording page must not show the microphone picker');
  await renderer.act(async()=>{await findIcon('microphone').props.onPress();});
+ const activeMeter=root.root.findAll(n=>n.type==='View'&&n.props.accessibilityRole==='progressbar')[0];
+ const levelWhileRecording=activeMeter.props.accessibilityValue.now;
  await renderer.act(async()=>{await findIcon('stop').props.onPress();});
  const result=root.root.findAll(n=>n.type==='TextInput'&&n.props.placeholder==='Start recording to get ASR result')[0].props.value;
  const hasPlayback = root.root.findAll(n=>n.type==="audio" && typeof n.props.src==="string").length === 1;
  const canRecordAgain = !!findIcon("microphone");
  await renderer.act(async()=>root.unmount());
- return {fails,stops,transcribes,result,canRecordAgain,hasPlayback,requestedDevice,unexpectedWrites:uploads.some(a=>String(a[2]).includes('undefined'))};
+ return {fails,stops,transcribes,result,canRecordAgain,hasPlayback,requestedDevice,levelWhileRecording,unexpectedWrites:uploads.some(a=>String(a[2]).includes('undefined'))};
 }
 (async()=>{
  const success=await scenario(false),failure=await scenario(true),stopFailure=await scenario(false,true);
  console.log(JSON.stringify({source,success,failure,stopFailure},null,2));
- assert.equal(success.requestedDevice,'physical-test-id','Use the microphone chosen on the recording page');
+ assert.equal(success.requestedDevice,'physical-test-id','Reuse the microphone preference across recording pages');
+ assert.ok(success.levelWhileRecording>0,'Show live microphone level while recording');
  assert.equal(success.stops,1,'Stopping one recording must stop the recorder exactly once');
  assert.equal(success.transcribes,1,'Stopping one recording must upload exactly once');
  assert.equal(success.result,'Existing text New transcript');
