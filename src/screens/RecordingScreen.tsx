@@ -76,6 +76,7 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
         counter,
         startRecording,
         stopRecording,
+        blobURL,
     } = useRecording();
 
     const sendToGPT = async () => {
@@ -227,6 +228,12 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
                             />
                         </View>
                     </View>
+                    {Platform.OS === 'web' && blobURL && (
+                        <View style={{ marginVertical: 10 }}>
+                            <Text>Last recording (available until you leave this page)</Text>
+                            <audio controls src={blobURL} style={{ width: '100%' }} />
+                        </View>
+                    )}
                     <Text style={{ fontWeight: 'bold', fontSize: 16, marginTop: 10, }}>ASR result</Text>
                     <TextInput
                         // label="ASR result"

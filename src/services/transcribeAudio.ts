@@ -1,6 +1,8 @@
 import { fetchPreferences } from './FirestoreService';
 import * as OpenCC from 'opencc-js';
 
+class TranscriptionError extends Error {}
+
 // 修改過的 transcribeAudio 函數
 export const transcribeAudio = async (audioInput: string | Blob): Promise<string> => {
     const data = new FormData();
@@ -42,12 +44,13 @@ export const transcribeAudio = async (audioInput: string | Blob): Promise<string
             return converter(jsonResponse['transcript']);// 返回轉錄的文本
         } else {
             console.error('Transcription request failed:', response.status);
-            throw new Error(jsonResponse?.code === 'NO_SPEECH'
+            throw new TranscriptionError(jsonResponse?.code === 'NO_SPEECH'
                 ? 'No speech was recognized. Check the microphone input and try again.'
                 : 'Failed to transcribe audio. Please try again.');
         }
     } catch (error) {
-        console.error('Error during transcription:', error);
-        throw error;
+        console.error('Audio transcription request failed');
+        if (error instanceof TranscriptionError) throw error;
+        throw new TranscriptionError('Failed to transcribe audio. Please try again.');
     }
 };

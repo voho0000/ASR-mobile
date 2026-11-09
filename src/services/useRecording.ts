@@ -13,7 +13,12 @@ export const useRecording = () => {
   const [mp3Recorder] = useState(new Mp3Recorder({ bitRate: 128 }));
   const activeRecording = useRef(false);
   const nativeRecording = useRef<Audio.Recording | null>(null);
+  const lastBlobURL = useRef<string | null>(null);
   const [blobURL, setBlobURL] = useState<string | null>(null);
+
+  useEffect(() => () => {
+    if (lastBlobURL.current) URL.revokeObjectURL(lastBlobURL.current);
+  }, []);
 
   useEffect(() => () => {
     if (!activeRecording.current) return;
@@ -118,6 +123,8 @@ const stopRecording = async (shouldShowToast: boolean = true) => {
     try {
       const [buffer, blob] = await mp3Recorder.stop().getMp3();
       const blobURL = URL.createObjectURL(blob);
+      if (lastBlobURL.current) URL.revokeObjectURL(lastBlobURL.current);
+      lastBlobURL.current = blobURL;
       setBlobURL(blobURL);
       setIsRecording(false);
       setIsPaused(false);

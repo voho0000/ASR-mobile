@@ -52,9 +52,10 @@ async function scenario(fails, failsToStop=false) {
  await renderer.act(async()=>{await findIcon('microphone').props.onPress();});
  await renderer.act(async()=>{await findIcon('stop').props.onPress();});
  const result=root.root.findAll(n=>n.type==='TextInput'&&n.props.placeholder==='Start recording to get ASR result')[0].props.value;
+ const hasPlayback = root.root.findAll(n=>n.type==="audio" && typeof n.props.src==="string").length === 1;
  const canRecordAgain = !!findIcon("microphone");
  await renderer.act(async()=>root.unmount());
- return {fails,stops,transcribes,result,canRecordAgain,unexpectedWrites:uploads.some(a=>String(a[2]).includes('undefined'))};
+ return {fails,stops,transcribes,result,canRecordAgain,hasPlayback,unexpectedWrites:uploads.some(a=>String(a[2]).includes('undefined'))};
 }
 (async()=>{
  const success=await scenario(false),failure=await scenario(true),stopFailure=await scenario(false,true);
@@ -63,6 +64,7 @@ async function scenario(fails, failsToStop=false) {
  assert.equal(success.transcribes,1,'Stopping one recording must upload exactly once');
  assert.equal(success.result,'Existing text New transcript');
  assert.equal(failure.result,'Existing text','A failed transcript must preserve existing text');
+ assert.equal(failure.hasPlayback,true,'Failed transcription must leave its recording available for local playback');
  assert.equal(stopFailure.canRecordAgain,true,'Failed stop must return to the microphone button');
  assert.equal(stopFailure.transcribes,0,'Failed encoding must not upload');
  assert.equal(failure.unexpectedWrites,false,'Do not persist undefined after a failed transcript');
