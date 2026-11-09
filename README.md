@@ -48,3 +48,16 @@ OPENAI_API_KEY=your_openai_api_key
 ```
 
 Replace `your_openai_api_key` with your actual OpenAI API key.
+
+## Web build and recording verification
+
+This app retains its existing Webpack export with Expo SDK 51. The project-local
+`.npmrc` enables legacy peer resolution because `@expo/webpack-config` declares
+older Expo peer versions. Use `npm ci` to reproduce the committed lockfile.
+
+Run `npm run test:recording` for the stop/upload lifecycle regression checks and
+`npm run predeploy` to export the website. The lifecycle tests replace hardware
+and network dependencies; they do not verify a physical microphone.
+
+OpenAI credentials are managed by the ASR-firebase backend. Do not add an OpenAI
+key to frontend configuration or public build files.

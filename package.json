@@ -8,7 +8,8 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "predeploy": "npx expo export:web",
-    "deploy-hosting": "npm run predeploy && firebase deploy --only hosting"
+    "deploy-hosting": "npm run predeploy && firebase deploy --only hosting",
+    "test:recording": "node tests/recording-flow.cjs && node tests/web-recording.cjs"
   },
   "dependencies": {
     "@babel/runtime": "^7.22.6",
@@ -23,7 +24,6 @@
     "expo-crypto": "~13.0.2",
     "expo-status-bar": "~1.12.1",
     "firebase": "^10.1.0",
-    "mic-recorder-to-mp3": "^2.2.2",
     "opencc-js": "^1.0.5",
     "react": "18.2.0",
     "react-dom": "18.2.0",
@@ -39,11 +39,13 @@
   },
   "devDependencies": {
     "@babel/core": "^7.24.0",
+    "@expo/webpack-config": "^19.0.1",
     "@types/opencc-js": "^1.0.3",
     "@types/react": "~18.2.79",
     "babel-plugin-module-resolver": "^5.0.2",
     "path": "^0.12.7",
     "react-native-dotenv": "^3.4.9",
+    "react-test-renderer": "18.2.0",
     "typescript": "~5.3.3"
   },
   "private": true

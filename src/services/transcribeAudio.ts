@@ -1,31 +1,7 @@
-// export const transcribeAudio = async (audioBlob: Blob): Promise<string> => {
-//     const OPENAI_API_KEY = "";
-    
-//     const data = new FormData();
-//     data.append('file', audioBlob, 'audio.mp3');  // 將 Blob 作為文件附加到 FormData
-//     data.append('model', 'whisper-1');
-//     data.append('prompt', 'The following is about a medical summary of a patient. Answer in Traditional Chinese and English.');
-//     try {
-//       const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
-//         method: 'POST',
-//         body: data,
-//         headers: {
-//           'Authorization': `Bearer ${OPENAI_API_KEY}`,
-//           // 請注意，我們不需要在這裡設置 `Content-Type`，瀏覽器會自動設置 `multipart/form-data` 邊界
-//         },
-//       });
-//       const jsonResponse = await response.json();
-//       console.log(jsonResponse);
-//       return jsonResponse['text'];
-//     } catch (error) {
-//       console.error('Error during transcription:', error);
-//       throw new Error('Error occurred while transcribing');
-//     }
-//   };
-
-
 import { fetchPreferences } from './FirestoreService';
 import * as OpenCC from 'opencc-js';
+
+class TranscriptionError extends Error {}
 
 // 修改過的 transcribeAudio 函數
 export const transcribeAudio = async (audioInput: string | Blob): Promise<string> => {
@@ -45,7 +21,8 @@ export const transcribeAudio = async (audioInput: string | Blob): Promise<string
 
     if (audioInput instanceof Blob) {
         // 如果是 Blob（網頁版）
-        data.append('file', audioInput, 'recording.mp3');
+        const extension = audioInput.type.includes('mp4') ? 'm4a' : 'webm';
+        data.append('file', audioInput, `recording.${extension}`);
     } else {
         // 如果是 URI（App 版）
         const file = { uri: audioInput, name: 'recording.m4a', type: 'audio/m4a' };
@@ -64,14 +41,17 @@ export const transcribeAudio = async (audioInput: string | Blob): Promise<string
         });
         
         const jsonResponse = await response.json(); // 等待 JSON 響應
-        if (jsonResponse) {
+        if (response.ok && typeof jsonResponse?.transcript === 'string' && jsonResponse.transcript.trim()) {
             return converter(jsonResponse['transcript']);// 返回轉錄的文本
         } else {
-            console.error('Failed to transcribe audio:', jsonResponse);
-            throw new Error('Failed to transcribe audio');
+            console.error('Transcription request failed:', response.status);
+            throw new TranscriptionError(jsonResponse?.code === 'NO_SPEECH'
+                ? 'No speech was recognized. Check the microphone input and try again.'
+                : 'Failed to transcribe audio. Please try again.');
         }
     } catch (error) {
-        console.error('Error during transcription:', error);
-        throw new Error('Error occurred while transcribing');
+        console.error('Audio transcription request failed');
+        if (error instanceof TranscriptionError) throw error;
+        throw new TranscriptionError('Failed to transcribe audio. Please try again.');
     }
 };

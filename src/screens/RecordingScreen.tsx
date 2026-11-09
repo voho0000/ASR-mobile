@@ -76,16 +76,10 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
         counter,
         startRecording,
         stopRecording,
+        blobURL,
+        microphones, selectedMicrophoneId, setSelectedMicrophoneId,
+        refreshMicrophones, inputLabel,
     } = useRecording();
-
-    // Stop recording when the component is unmounted
-    useEffect(() => {
-        return () => {
-            if (isRecording) {
-                stopRecording(false);  // Stop recording if the user leaves the screen
-            }
-        };
-    }, [isRecording]);
 
     const sendToGPT = async () => {
         setIsLoadingGpt(true);
@@ -111,7 +105,11 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
             }
         } catch (error) {
             console.error("Failed to get response from GPT:", error);
-            Alert.alert("Error", "Failed to get response from GPT. Please try again.");
+            Toast.show({
+                type: "error",
+                text1: "Error",
+                text2: "Failed to get response from GPT. Please try again.",
+            });
         }
         setIsLoadingGpt(false);
     };
@@ -156,9 +154,14 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
 
     const handleStopRecording = async () => {
         setIsTranscriptLoading(true);
-        const transcript = await stopRecording();
-        setAsrResponse(prevAsrResponse => `${prevAsrResponse} ${transcript}`);
-        setIsTranscriptLoading(false);
+        try {
+            const transcript = await stopRecording();
+            if (transcript) {
+                setAsrResponse(previous => `${previous} ${transcript}`);
+            }
+        } finally {
+            setIsTranscriptLoading(false);
+        }
     };
 
     if (isLoading) {
@@ -197,6 +200,27 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
                         value={patientInfo}
                         scrollEnabled
                     />
+                    {Platform.OS === 'web' && (
+                        <View style={{ marginVertical: 10 }}>
+                            <Text>Microphone</Text>
+                            <select aria-label="Microphone" value={selectedMicrophoneId}
+                                disabled={isRecording || isTranscriptLoading}
+                                onChange={event => setSelectedMicrophoneId(event.target.value)}
+                                style={{ width: '100%', padding: 10 }}>
+                                <option value="">Use browser default microphone</option>
+                                {microphones.map((device, index) => (
+                                    <option key={device.deviceId} value={device.deviceId}>
+                                        {device.label || `Microphone ${index + 1}`}
+                                    </option>
+                                ))}
+                            </select>
+                            <Button onPress={refreshMicrophones}
+                                disabled={isRecording || isTranscriptLoading}>
+                                Refresh microphones
+                            </Button>
+                            {inputLabel !== '' && <Text>Recording input: {inputLabel}</Text>}
+                        </View>
+                    )}
                     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', paddingRight: 20 }}>
                         <View style={{
                             justifyContent: 'center', flex: 0.2, flexDirection: 'row',
@@ -209,7 +233,7 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
                                 />
                             ) : (
                                 <IconButton
-                                    onPress={startRecording}
+                                    onPress={() => { if (!isTranscriptLoading) void startRecording(); }}
                                     iconName="microphone"
                                 />
                             )}
@@ -227,6 +251,12 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
                             />
                         </View>
                     </View>
+                    {Platform.OS === 'web' && blobURL && (
+                        <View style={{ marginVertical: 10 }}>
+                            <Text>Last available recording (until the next recording or leaving this page)</Text>
+                            <audio controls src={blobURL} style={{ width: '100%' }} />
+                        </View>
+                    )}
                     <Text style={{ fontWeight: 'bold', fontSize: 16, marginTop: 10, }}>ASR result</Text>
                     <TextInput
                         // label="ASR result"

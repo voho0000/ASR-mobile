@@ -1,3 +1,4 @@
+import { models } from '../services/models';
 import { useState, useEffect } from 'react';
 import { View, StyleSheet, Keyboard, Dimensions } from 'react-native';
 import { TextInput, Button, Paragraph, List, Divider, Text, ActivityIndicator } from 'react-native-paper';
@@ -31,10 +32,7 @@ const PreferenceScreen = ({ navigation }: { navigation: PreferenceNavigationProp
     const [selectPrompt, setSelectPrompt] = useState<string>('');
     const [prompts, setPrompts] = useState<Prompt[]>([]);
 
-    const models: Model[] = [
-        { label: 'GPT-4o-mini', value: 'gpt-4o-mini' },
-        { label: 'GPT-4o', value: 'gpt-4o' },
-    ];
+
 
     const [selectedModel, setSelectedModel] = useState<Model>(models[0]);  // Update to store object
 

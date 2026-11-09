@@ -1,6 +1,5 @@
-import { useState, useEffect } from "react";
-// @ts-ignore
-import Mp3Recorder from 'mic-recorder-to-mp3';  // 引入 mic-recorder-to-mp3
+import { useState, useEffect, useRef } from "react";
+import { startWebRecording } from './webRecording';
 import { transcribeAudio } from './transcribeAudio';
 import Toast from 'react-native-toast-message';
 import { Platform } from 'react-native';
@@ -10,8 +9,52 @@ export const useRecording = () => {
   const [isRecording, setIsRecording] = useState<boolean>(false);
   const [isPaused, setIsPaused] = useState<boolean>(false);
   const [counter, setCounter] = useState<number>(0);
-  const [mp3Recorder] = useState(new Mp3Recorder({ bitRate: 128 }));
+  const webRecording = useRef<Awaited<ReturnType<typeof startWebRecording>> | null>(null);
+  const mounted = useRef(true);
+  const starting = useRef(false);
+  const activeRecording = useRef(false);
+  const nativeRecording = useRef<Audio.Recording | null>(null);
+  const lastBlobURL = useRef<string | null>(null);
   const [blobURL, setBlobURL] = useState<string | null>(null);
+  const [microphones, setMicrophones] = useState<MediaDeviceInfo[]>([]);
+  const [selectedMicrophoneId, setSelectedMicrophoneId] = useState('');
+  const [inputLabel, setInputLabel] = useState('');
+
+  const loadMicrophones = async () => {
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    if (mounted.current) {
+      setMicrophones(devices.filter(device => device.kind === 'audioinput'));
+    }
+  };
+
+  const refreshMicrophones = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach(track => track.stop());
+      await loadMicrophones();
+    } catch {
+      showToast('Allow microphone access to choose an input device.');
+    }
+  };
+
+  useEffect(() => {
+    if (Platform.OS === 'web') void loadMicrophones().catch(() => {});
+  }, []);
+
+
+  useEffect(() => () => {
+    if (lastBlobURL.current) URL.revokeObjectURL(lastBlobURL.current);
+  }, []);
+
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      activeRecording.current = false;
+      webRecording.current?.cancel();
+      void nativeRecording.current?.stopAndUnloadAsync().catch(() => {});
+    };
+  }, []);
 
   useEffect(() => {
     let interval: ReturnType<typeof setInterval> | null = null;
@@ -27,10 +70,17 @@ export const useRecording = () => {
 
   // 開始錄音
   const startRecording = async () => {
+    if (starting.current || activeRecording.current) return;
+    starting.current = true;
     try {
       if (Platform.OS === 'web') {
-        // 如果是在 Web 上，使用 mic-recorder-to-mp3
-        await mp3Recorder.start();
+        const capture = await startWebRecording(selectedMicrophoneId);
+        if (!mounted.current) {
+          capture.cancel();
+          return;
+        }
+        webRecording.current = capture;
+        setInputLabel(capture.deviceLabel);
       } else {
         // 在 iOS/Android 應用中，使用 Expo 的錄音 API
         const { status } = await Audio.requestPermissionsAsync();
@@ -53,52 +103,38 @@ export const useRecording = () => {
           await newRecording.prepareToRecordAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
           await newRecording.startAsync();
   
+          nativeRecording.current = newRecording;
           setRecording(newRecording);
           setIsRecording(true);
         }
       }
+      activeRecording.current = true;
       setIsRecording(true);
     } catch (error) {
       console.error('Failed to start recording:', error);
       showToast('Failed to start recording.', 'error');
+    } finally {
+      starting.current = false;
     }
   };
 
-  // // 暫停錄音
-  // const pauseRecording = async () => {
-  //   if (Platform.OS === 'web') {
-  //     try {
-  //       await mp3Recorder.pause();
-  //       setIsPaused(true);
-  //     } catch (error) {
-  //       console.error('Failed to pause web recording:', error);
-  //       showToast('Failed to pause recording. Please try again.', 'error');
-  //     }
-  //   } else {
-  //     try {
-  //       await recording?.pauseAsync();
-  //       setIsPaused(true);
-  //     } catch (error) {
-  //       console.error('Failed to pause app recording:', error);
-  //       Toast.show({
-  //         type: 'error',
-  //         position: 'top',
-  //         text1: 'Error',
-  //         text2: 'Failed to pause recording. Please try again',
-  //         visibilityTime: 2000,
-  //         autoHide: true,
-  //         bottomOffset: 40,
-  //       });      }
-  //   }
-  // };
-
-
 // 停止錄音
 const stopRecording = async (shouldShowToast: boolean = true) => {
+  if (!activeRecording.current) return;
+  activeRecording.current = false;
+  setIsRecording(false);
+  setIsPaused(false);
+  setCounter(0);
   if (Platform.OS === 'web') {
     try {
-      const [buffer, blob] = await mp3Recorder.stop().getMp3();
+      const capture = webRecording.current;
+      webRecording.current = null;
+      if (!capture) return;
+      const blob = await capture.stop();
+      if (!mounted.current) return;
       const blobURL = URL.createObjectURL(blob);
+      if (lastBlobURL.current) URL.revokeObjectURL(lastBlobURL.current);
+      lastBlobURL.current = blobURL;
       setBlobURL(blobURL);
       setIsRecording(false);
       setIsPaused(false);
@@ -114,7 +150,7 @@ const stopRecording = async (shouldShowToast: boolean = true) => {
         } catch (error) {
           console.error('Failed to transcribe audio:', error);
           if (shouldShowToast) {
-            showToast('Failed to transcribe audio. Please try again.');
+            showToast(error instanceof Error ? error.message : 'Failed to transcribe audio. Please try again.');
           }        }
       }
     } catch (error) {
@@ -126,6 +162,7 @@ const stopRecording = async (shouldShowToast: boolean = true) => {
     try {
       await recording?.stopAndUnloadAsync();
       const audioUri = recording?.getURI() || null;
+      nativeRecording.current = null;
       setRecording(null);
       setIsRecording(false);
       setIsPaused(false);
@@ -141,7 +178,7 @@ const stopRecording = async (shouldShowToast: boolean = true) => {
         } catch (error) {
           console.error('Failed to transcribe audio:', error);
           if (shouldShowToast) {
-            showToast('Failed to transcribe audio. Please try again.');
+            showToast(error instanceof Error ? error.message : 'Failed to transcribe audio. Please try again.');
           }        
         }
       }
@@ -174,5 +211,10 @@ const stopRecording = async (shouldShowToast: boolean = true) => {
     stopRecording,
     // pauseRecording,
     blobURL,
+    microphones,
+    selectedMicrophoneId,
+    setSelectedMicrophoneId,
+    refreshMicrophones,
+    inputLabel,
   };
 };
