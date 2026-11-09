@@ -260,7 +260,14 @@ export const fetchPreferences = async () => {
     }
 
     const preferences = docSnap.data();
-    return { ...preferences, gptModel: normalizeModel(preferences.gptModel) };
+    return {
+      ...preferences,
+      commonWords: typeof preferences.commonWords === "string" ?
+        preferences.commonWords : "",
+      gptModel: normalizeModel(preferences.gptModel),
+      defaultPrompt: typeof preferences.defaultPrompt === "string" ?
+        preferences.defaultPrompt : "",
+    };
   } catch (error) {
     handleFirestoreError(error as FirebaseError);
     throw error; // re-throw the error after handling it
