@@ -1,3 +1,4 @@
+import { normalizeModel } from './models';
 // FirestoreService.ts
 import { db } from '../firebaseConfig';
 import { collection, getDocs, doc, setDoc, updateDoc, deleteDoc, getDoc } from 'firebase/firestore';
@@ -199,7 +200,7 @@ export const initializePreferences = async (): Promise<void> => {
 
     await setDoc(doc(db, 'Preferences', userId), {
       commonWords: "",
-      gptModel: "gpt-4o-mini",
+      gptModel: "gpt-6-luna",
       defaultPrompt: ""
     });
   } catch (error) {
@@ -258,7 +259,8 @@ export const fetchPreferences = async () => {
       throw new Error(`Failed to fetch preferences for user: ${userId}`);
     }
 
-    return docSnap.data();
+    const preferences = docSnap.data();
+    return { ...preferences, gptModel: normalizeModel(preferences.gptModel) };
   } catch (error) {
     handleFirestoreError(error as FirebaseError);
     throw error; // re-throw the error after handling it

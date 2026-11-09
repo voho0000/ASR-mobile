@@ -1,29 +1,3 @@
-// export const transcribeAudio = async (audioBlob: Blob): Promise<string> => {
-//     const OPENAI_API_KEY = "";
-    
-//     const data = new FormData();
-//     data.append('file', audioBlob, 'audio.mp3');  // 將 Blob 作為文件附加到 FormData
-//     data.append('model', 'whisper-1');
-//     data.append('prompt', 'The following is about a medical summary of a patient. Answer in Traditional Chinese and English.');
-//     try {
-//       const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
-//         method: 'POST',
-//         body: data,
-//         headers: {
-//           'Authorization': `Bearer ${OPENAI_API_KEY}`,
-//           // 請注意，我們不需要在這裡設置 `Content-Type`，瀏覽器會自動設置 `multipart/form-data` 邊界
-//         },
-//       });
-//       const jsonResponse = await response.json();
-//       console.log(jsonResponse);
-//       return jsonResponse['text'];
-//     } catch (error) {
-//       console.error('Error during transcription:', error);
-//       throw new Error('Error occurred while transcribing');
-//     }
-//   };
-
-
 import { fetchPreferences } from './FirestoreService';
 import * as OpenCC from 'opencc-js';
 
@@ -64,10 +38,10 @@ export const transcribeAudio = async (audioInput: string | Blob): Promise<string
         });
         
         const jsonResponse = await response.json(); // 等待 JSON 響應
-        if (jsonResponse) {
+        if (response.ok && typeof jsonResponse?.transcript === 'string' && jsonResponse.transcript.trim()) {
             return converter(jsonResponse['transcript']);// 返回轉錄的文本
         } else {
-            console.error('Failed to transcribe audio:', jsonResponse);
+            console.error('Transcription request failed:', response.status);
             throw new Error('Failed to transcribe audio');
         }
     } catch (error) {
