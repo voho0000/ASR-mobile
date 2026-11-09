@@ -78,15 +78,6 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
         stopRecording,
     } = useRecording();
 
-    // Stop recording when the component is unmounted
-    useEffect(() => {
-        return () => {
-            if (isRecording) {
-                stopRecording(false);  // Stop recording if the user leaves the screen
-            }
-        };
-    }, [isRecording]);
-
     const sendToGPT = async () => {
         setIsLoadingGpt(true);
         let promptContent = '';
@@ -156,9 +147,14 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
 
     const handleStopRecording = async () => {
         setIsTranscriptLoading(true);
-        const transcript = await stopRecording();
-        setAsrResponse(prevAsrResponse => `${prevAsrResponse} ${transcript}`);
-        setIsTranscriptLoading(false);
+        try {
+            const transcript = await stopRecording();
+            if (transcript) {
+                setAsrResponse(previous => `${previous} ${transcript}`);
+            }
+        } finally {
+            setIsTranscriptLoading(false);
+        }
     };
 
     if (isLoading) {

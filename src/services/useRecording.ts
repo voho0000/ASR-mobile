@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 // @ts-ignore
 import Mp3Recorder from 'mic-recorder-to-mp3';  // 引入 mic-recorder-to-mp3
 import { transcribeAudio } from './transcribeAudio';
@@ -11,7 +11,19 @@ export const useRecording = () => {
   const [isPaused, setIsPaused] = useState<boolean>(false);
   const [counter, setCounter] = useState<number>(0);
   const [mp3Recorder] = useState(new Mp3Recorder({ bitRate: 128 }));
+  const activeRecording = useRef(false);
+  const nativeRecording = useRef<Audio.Recording | null>(null);
   const [blobURL, setBlobURL] = useState<string | null>(null);
+
+  useEffect(() => () => {
+    if (!activeRecording.current) return;
+    activeRecording.current = false;
+    if (Platform.OS === 'web') {
+      mp3Recorder.stop();
+    } else {
+      void nativeRecording.current?.stopAndUnloadAsync().catch(() => {});
+    }
+  }, [mp3Recorder]);
 
   useEffect(() => {
     let interval: ReturnType<typeof setInterval> | null = null;
@@ -53,10 +65,12 @@ export const useRecording = () => {
           await newRecording.prepareToRecordAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
           await newRecording.startAsync();
   
+          nativeRecording.current = newRecording;
           setRecording(newRecording);
           setIsRecording(true);
         }
       }
+      activeRecording.current = true;
       setIsRecording(true);
     } catch (error) {
       console.error('Failed to start recording:', error);
@@ -95,6 +109,8 @@ export const useRecording = () => {
 
 // 停止錄音
 const stopRecording = async (shouldShowToast: boolean = true) => {
+  if (!activeRecording.current) return;
+  activeRecording.current = false;
   if (Platform.OS === 'web') {
     try {
       const [buffer, blob] = await mp3Recorder.stop().getMp3();
@@ -126,6 +142,7 @@ const stopRecording = async (shouldShowToast: boolean = true) => {
     try {
       await recording?.stopAndUnloadAsync();
       const audioUri = recording?.getURI() || null;
+      nativeRecording.current = null;
       setRecording(null);
       setIsRecording(false);
       setIsPaused(false);
