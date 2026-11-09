@@ -5,7 +5,7 @@ const ts = require('typescript');
 const path = require('path');
 const code = ts.transpileModule(fs.readFileSync(path.join(__dirname,'../src/services/webRecording.ts'),'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2017}}).outputText;
 async function scenario({mime='audio/webm;codecs=opus',error=false,empty=false,unsupported=false,startFails=false}={}) {
- let releases=0,stops=0;
+ let releases=0,stops=0,requestedConstraints;
  class Recorder {
   static isTypeSupported(type){return !unsupported && type===mime;}
   constructor(stream,options){this.mimeType=options.mimeType;this.state='inactive';}
@@ -16,18 +16,19 @@ async function scenario({mime='audio/webm;codecs=opus',error=false,empty=false,u
    this.onstop();
   });}
  }
- const sandbox={exports:{},Blob,MediaRecorder:Recorder,navigator:{mediaDevices:{getUserMedia:async()=>({getTracks:()=>[{stop(){releases++;}}]})}}};
+ const sandbox={exports:{},Blob,MediaRecorder:Recorder,navigator:{mediaDevices:{getUserMedia:async options=>{requestedConstraints=options;return {getTracks:()=>[{stop(){releases++;}}],getAudioTracks:()=>[{label:'Synthetic physical microphone'}]}}}}};
  vm.runInNewContext(code,sandbox);
  try {
-  const capture=await sandbox.exports.startWebRecording();
+  const capture=await sandbox.exports.startWebRecording('physical-test-id');
   const first=capture.stop(),second=capture.stop();
   const [blob,again]=await Promise.all([first,second]);
-  return {blob,again,releases,stops};
+  return {blob,again,releases,stops,requestedConstraints};
  } catch(e){return {error:e.message,releases,stops};}
 }
 (async()=>{
  const success=await scenario();
  assert.equal(await success.blob.text(),'firstlast','Wait for all final dataavailable chunks before resolving');
+ assert.equal(success.requestedConstraints.audio.deviceId.exact,'physical-test-id');
  assert.equal(success.blob.type,'audio/webm;codecs=opus');
  assert.equal(success.blob,success.again);assert.equal(success.stops,1);assert.ok(success.releases);
  const mp4=await scenario({mime:'audio/mp4'});assert.equal(mp4.blob.type,'audio/mp4');

@@ -16,6 +16,31 @@ export const useRecording = () => {
   const nativeRecording = useRef<Audio.Recording | null>(null);
   const lastBlobURL = useRef<string | null>(null);
   const [blobURL, setBlobURL] = useState<string | null>(null);
+  const [microphones, setMicrophones] = useState<MediaDeviceInfo[]>([]);
+  const [selectedMicrophoneId, setSelectedMicrophoneId] = useState('');
+  const [inputLabel, setInputLabel] = useState('');
+
+  const loadMicrophones = async () => {
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    if (mounted.current) {
+      setMicrophones(devices.filter(device => device.kind === 'audioinput'));
+    }
+  };
+
+  const refreshMicrophones = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach(track => track.stop());
+      await loadMicrophones();
+    } catch {
+      showToast('Allow microphone access to choose an input device.');
+    }
+  };
+
+  useEffect(() => {
+    if (Platform.OS === 'web') void loadMicrophones().catch(() => {});
+  }, []);
+
 
   useEffect(() => () => {
     if (lastBlobURL.current) URL.revokeObjectURL(lastBlobURL.current);
@@ -49,12 +74,13 @@ export const useRecording = () => {
     starting.current = true;
     try {
       if (Platform.OS === 'web') {
-        const capture = await startWebRecording();
+        const capture = await startWebRecording(selectedMicrophoneId);
         if (!mounted.current) {
           capture.cancel();
           return;
         }
         webRecording.current = capture;
+        setInputLabel(capture.deviceLabel);
       } else {
         // 在 iOS/Android 應用中，使用 Expo 的錄音 API
         const { status } = await Audio.requestPermissionsAsync();
@@ -185,5 +211,10 @@ const stopRecording = async (shouldShowToast: boolean = true) => {
     stopRecording,
     // pauseRecording,
     blobURL,
+    microphones,
+    selectedMicrophoneId,
+    setSelectedMicrophoneId,
+    refreshMicrophones,
+    inputLabel,
   };
 };

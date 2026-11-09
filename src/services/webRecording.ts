@@ -1,5 +1,7 @@
-export const startWebRecording = async () => {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+export const startWebRecording = async (deviceId = '') => {
+    const stream = await navigator.mediaDevices.getUserMedia({
+        audio: deviceId ? { deviceId: { exact: deviceId } } : true,
+    });
     const release = () => stream.getTracks().forEach(track => track.stop());
     try {
         const mimeType = ['audio/webm;codecs=opus', 'audio/mp4']
@@ -26,6 +28,7 @@ export const startWebRecording = async () => {
         void completed.catch(() => {});
         recorder.start();
         return {
+            deviceLabel: stream.getAudioTracks()[0]?.label || 'Microphone',
             stop: () => {
                 if (recorder.state !== 'inactive') recorder.stop();
                 return completed;
