@@ -77,8 +77,7 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
         counter,
         startRecording,
         stopRecording,
-        blobURL,
-        inputLabel, inputLevel,
+        inputLevel,
     } = useRecording();
 
     const sendToGPT = async () => {
@@ -200,45 +199,22 @@ const RecordingScreen: React.FC<Props> = ({ route }) => {
                         value={patientInfo}
                         scrollEnabled
                     />
-                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', paddingRight: 20 }}>
-                        <View style={{
-                            justifyContent: 'center', flex: 0.2, flexDirection: 'row',
-                            paddingLeft: 20,
-                        }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', columnGap: 8 }}>
+                        <View style={{ flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center' }}>
                             {isRecording ? (
-                                <IconButton
-                                    onPress={handleStopRecording}
-                                    iconName="stop"
-                                />
+                                <IconButton onPress={handleStopRecording} iconName="stop" marginRight={0} />
                             ) : (
-                                <IconButton
-                                    onPress={() => { if (!isTranscriptLoading) void startRecording(); }}
-                                    iconName="microphone"
-                                />
+                                <IconButton onPress={() => { if (!isTranscriptLoading) void startRecording(); }}
+                                    iconName="microphone" marginRight={0} />
                             )}
+                            {Platform.OS === 'web' && isRecording && <MicrophoneLevel level={inputLevel} />}
+                            {isTranscriptLoading && <ActivityIndicator size="small" style={{ marginLeft: 8 }} />}
                         </View>
-                        <View style={{ flex: 0.1 }}>
-                            {isTranscriptLoading && <ActivityIndicator size="small" style={{ paddingRight: 10 }} />}
-                        </View>
-                        <View style={{ flex: 0.2 }}>
-                            <Text style={{ fontSize: 14, }}>{msToTime(counter)}</Text>
-                        </View>
-                        <View style={{ flex: 0.4 }}>
-                            <PromptDropdown
-                                selectedPrompt={selectedPrompt}
-                                setSelectedPrompt={setSelectedPrompt}
-                            />
+                        <Text style={{ fontSize: 14, minWidth: 40, textAlign: 'center' }}>{msToTime(counter)}</Text>
+                        <View style={{ flex: 1, minWidth: 0 }}>
+                            <PromptDropdown selectedPrompt={selectedPrompt} setSelectedPrompt={setSelectedPrompt} />
                         </View>
                     </View>
-                    {Platform.OS === 'web' && (
-                        <MicrophoneLevel level={inputLevel} recording={isRecording} inputLabel={inputLabel} />
-                    )}
-                    {Platform.OS === 'web' && blobURL && (
-                        <View style={{ marginVertical: 10 }}>
-                            <Text>Last available recording (until the next recording or leaving this page)</Text>
-                            <audio controls src={blobURL} style={{ width: '100%' }} />
-                        </View>
-                    )}
                     <Text style={{ fontWeight: 'bold', fontSize: 16, marginTop: 10, }}>ASR result</Text>
                     <TextInput
                         // label="ASR result"

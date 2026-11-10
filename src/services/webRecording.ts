@@ -57,7 +57,6 @@ export const startWebRecording = async ({ deviceId = '', onLevel }: Options = {}
             }
         }
         return {
-            deviceLabel: stream.getAudioTracks()[0]?.label || 'Microphone',
             stop: () => {
                 if (recorder.state !== 'inactive') recorder.stop();
                 return completed;

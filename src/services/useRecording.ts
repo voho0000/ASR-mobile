@@ -15,15 +15,7 @@ export const useRecording = () => {
   const starting = useRef(false);
   const activeRecording = useRef(false);
   const nativeRecording = useRef<Audio.Recording | null>(null);
-  const lastBlobURL = useRef<string | null>(null);
-  const [blobURL, setBlobURL] = useState<string | null>(null);
-  const [inputLabel, setInputLabel] = useState(() => Platform.OS === 'web'
-    ? readMicrophonePreference().label : 'Microphone');
   const [inputLevel, setInputLevel] = useState<number | null>(0);
-
-  useEffect(() => () => {
-    if (lastBlobURL.current) URL.revokeObjectURL(lastBlobURL.current);
-  }, []);
 
   useEffect(() => {
     mounted.current = true;
@@ -62,7 +54,7 @@ export const useRecording = () => {
           return;
         }
         webRecording.current = capture;
-        setInputLabel(capture.deviceLabel);
+
       } else {
         // 在 iOS/Android 應用中，使用 Expo 的錄音 API
         const { status } = await Audio.requestPermissionsAsync();
@@ -114,10 +106,6 @@ const stopRecording = async (shouldShowToast: boolean = true) => {
       if (!capture) return;
       const blob = await capture.stop();
       if (!mounted.current) return;
-      const blobURL = URL.createObjectURL(blob);
-      if (lastBlobURL.current) URL.revokeObjectURL(lastBlobURL.current);
-      lastBlobURL.current = blobURL;
-      setBlobURL(blobURL);
       setIsRecording(false);
       setIsPaused(false);
       setCounter(0);
@@ -192,8 +180,6 @@ const stopRecording = async (shouldShowToast: boolean = true) => {
     startRecording,
     stopRecording,
     // pauseRecording,
-    blobURL,
-    inputLabel,
     inputLevel,
   };
 };

@@ -1,26 +1,16 @@
 import { View } from 'react-native';
-import { Text, useTheme } from 'react-native-paper';
+import { useTheme } from 'react-native-paper';
 
-type Props = { level: number | null; recording: boolean; inputLabel: string };
+type Props = { level: number | null };
 
-export default function MicrophoneLevel({ level, recording, inputLabel }: Props) {
+export default function MicrophoneLevel({ level }: Props) {
     const { colors } = useTheme();
-    const value = recording && level !== null ? level : 0;
-    const status = !recording ? 'Ready to record' : level === null ? 'Input level unavailable' : 'Listening';
     return (
-        <View style={{ marginVertical: 12 }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
-                <Text>Microphone input</Text>
-                <Text>{status}</Text>
-            </View>
-            <View accessibilityRole="progressbar" accessibilityLabel="Microphone input level"
-                accessibilityValue={{ min: 0, max: 100, now: value }}
-                style={{ height: 10, borderRadius: 5, overflow: 'hidden', backgroundColor: colors.surfaceVariant }}>
-                <View style={{ height: '100%', width: `${value}%`, backgroundColor: colors.primary }} />
-            </View>
-            <Text style={{ marginTop: 6 }}>
-                {recording ? 'Recording input' : 'Microphone'}: {inputLabel}
-            </Text>
+        <View accessibilityRole="progressbar" accessibilityLabel="Microphone input level"
+            accessibilityValue={level === null ? { text: 'Input level unavailable' } : { min: 0, max: 100, now: level }}
+            style={{ width: 96, minWidth: 24, flexShrink: 1, marginLeft: 8, height: 8,
+                borderRadius: 4, overflow: 'hidden', backgroundColor: colors.surfaceVariant }}>
+            <View style={{ height: '100%', width: `${level ?? 0}%`, backgroundColor: colors.primary }} />
         </View>
     );
 }

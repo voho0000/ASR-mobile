@@ -21,7 +21,6 @@ const firestore = {
 };
 class Recorder {
  constructor(onLevel){this.onLevel=onLevel;}
- deviceLabel='Synthetic physical microphone';
  async stop() { this.onLevel?.(0);stops++; if(stopFails)throw Error('Synthetic stop failure'); return new Blob(['synthetic'],{type:'audio/webm'}); }
  cancel() {}
 }
@@ -58,6 +57,7 @@ async function scenario(fails, failsToStop=false) {
  await renderer.act(async()=>{root=renderer.create(React.createElement(Screen,{route:{params:{name:'SYNTHETIC-ONLY'}}}));});
  const findIcon=name=>root.root.findAll(n=>n.type==='button'&&n.props.iconName===name)[0];
  assert.equal(root.root.findAll(n=>n.type==='select').length,0,'Recording page must not show the microphone picker');
+ assert.equal(root.root.findAll(n=>n.props.accessibilityRole==='progressbar').length,0,'Hide input meter until recording starts');
  await renderer.act(async()=>{await findIcon('microphone').props.onPress();});
  const activeMeter=root.root.findAll(n=>n.type==='View'&&n.props.accessibilityRole==='progressbar')[0];
  const levelWhileRecording=activeMeter.props.accessibilityValue.now;
@@ -77,7 +77,8 @@ async function scenario(fails, failsToStop=false) {
  assert.equal(success.transcribes,1,'Stopping one recording must upload exactly once');
  assert.equal(success.result,'Existing text New transcript');
  assert.equal(failure.result,'Existing text','A failed transcript must preserve existing text');
- assert.equal(failure.hasPlayback,true,'Failed transcription must leave its recording available for local playback');
+ assert.equal(success.hasPlayback,false,'Remove the diagnostic recording player');
+ assert.equal(failure.hasPlayback,false,'Do not show the diagnostic player after an upload error');
  assert.equal(stopFailure.canRecordAgain,true,'Failed stop must return to the microphone button');
  assert.equal(stopFailure.transcribes,0,'Failed encoding must not upload');
  assert.equal(failure.unexpectedWrites,false,'Do not persist undefined after a failed transcript');
