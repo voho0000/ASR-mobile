@@ -9,7 +9,7 @@
     "web": "expo start --web",
     "predeploy": "npx expo export:web",
     "deploy-hosting": "npm run predeploy && firebase deploy --only hosting",
-    "test:recording": "node tests/recording-flow.cjs && node tests/web-recording.cjs"
+    "test:recording": "node tests/recording-flow.cjs && node tests/web-recording.cjs && node tests/microphone-preference.cjs"
   },
   "dependencies": {
     "@babel/runtime": "^7.22.6",

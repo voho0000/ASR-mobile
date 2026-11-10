@@ -1,8 +1,17 @@
-export const startWebRecording = async (deviceId = '') => {
+type Options = { deviceId?: string; onLevel?: (level: number | null) => void };
+
+export const startWebRecording = async ({ deviceId = '', onLevel }: Options = {}) => {
     const stream = await navigator.mediaDevices.getUserMedia({
         audio: deviceId ? { deviceId: { exact: deviceId } } : true,
     });
-    const release = () => stream.getTracks().forEach(track => track.stop());
+    let meterContext: AudioContext | undefined;
+    let meterTimer: ReturnType<typeof setInterval> | undefined;
+    const release = () => {
+        clearInterval(meterTimer);
+        stream.getTracks().forEach(track => track.stop());
+        if (meterContext && meterContext.state !== 'closed') void meterContext.close().catch(() => {});
+        onLevel?.(0);
+    };
     try {
         const mimeType = ['audio/webm;codecs=opus', 'audio/mp4']
             .find(type => MediaRecorder.isTypeSupported(type));
@@ -27,8 +36,27 @@ export const startWebRecording = async (deviceId = '') => {
         // Errors can occur before the user presses stop; stop still receives them.
         void completed.catch(() => {});
         recorder.start();
+        if (onLevel) {
+            try {
+                const context = new AudioContext();
+                meterContext = context;
+                const analyser = context.createAnalyser();
+                analyser.fftSize = 2048;
+                context.createMediaStreamSource(stream).connect(analyser);
+                const samples = new Float32Array(analyser.fftSize);
+                void context.resume().catch(() => onLevel(null));
+                meterTimer = setInterval(() => {
+                    if (context.state !== 'running') { onLevel(null); return; }
+                    analyser.getFloatTimeDomainData(samples);
+                    let energy = 0;
+                    for (const sample of samples) energy += sample * sample;
+                    onLevel(Math.round(Math.min(1, Math.sqrt(energy / samples.length) * 8) * 100));
+                }, 80);
+            } catch {
+                onLevel(null);
+            }
+        }
         return {
-            deviceLabel: stream.getAudioTracks()[0]?.label || 'Microphone',
             stop: () => {
                 if (recorder.state !== 'inactive') recorder.stop();
                 return completed;
